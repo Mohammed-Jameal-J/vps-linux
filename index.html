@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VPS &amp; Linux Masterclass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #06100b;
+    --bg-soft: #0a1812;
+    --panel: #0d1f17;
+    --panel-2: #112a1f;
+    --line: #1d4231;
+    --green: #39ff8f;
+    --green-dim: #1f8a52;
+    --green-deep: #0e3322;
+    --white: #eef7f1;
+    --white-dim: #aac4b6;
+    --amber: #ffcf6b;
+    --red: #ff6b6b;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(57,255,143,0.07), transparent 40%),
+      radial-gradient(circle at 90% 30%, rgba(57,255,143,0.05), transparent 45%);
+    color:var(--white);
+    font-family:var(--sans);
+    line-height:1.6;
+  }
+  a{color:var(--green);}
+
+  /* scrollbar */
+  ::-webkit-scrollbar{width:10px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--green-deep);border-radius:6px;}
+
+  /* ---------- layout ---------- */
+  .shell{display:grid;grid-template-columns:270px 1fr;min-height:100vh;}
+  @media (max-width:900px){.shell{grid-template-columns:1fr;}}
+
+  /* sidebar */
+  .sidebar{
+    position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+    background:var(--bg-soft);
+    border-right:1px solid var(--line);
+    padding:24px 18px 40px;
+  }
+  @media (max-width:900px){
+    .sidebar{position:relative;height:auto;border-right:none;border-bottom:1px solid var(--line);}
+  }
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);}
+  .brand span{font-family:var(--mono);font-weight:700;letter-spacing:0.5px;font-size:14px;color:var(--green);}
+  .sidebar .sub{font-family:var(--mono);font-size:11px;color:var(--white-dim);margin:0 0 22px;}
+  .progress-rail{height:2px;background:var(--line);border-radius:2px;margin-bottom:24px;overflow:hidden;}
+  .progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--green-dim),var(--green));transition:width .15s linear;}
+
+  .navlist{list-style:none;margin:0;padding:0;}
+  .navlist li{margin-bottom:2px;}
+  .navlist a{
+    display:flex;gap:10px;align-items:baseline;
+    text-decoration:none;color:var(--white-dim);
+    font-size:13.5px;padding:7px 10px;border-radius:6px;
+    border-left:2px solid transparent;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .navlist a .n{font-family:var(--mono);color:var(--green-dim);font-size:11px;min-width:22px;}
+  .navlist a:hover{background:var(--panel);color:var(--white);}
+  .navlist a.active{background:var(--panel-2);color:var(--green);border-left-color:var(--green);}
+  .navlist a.active .n{color:var(--green);}
+
+  /* main */
+  main{padding:0;min-width:0;}
+  .section{padding:64px 56px;max-width:880px;border-bottom:1px solid var(--line);}
+  @media (max-width:700px){.section{padding:44px 20px;}}
+  .section:last-of-type{border-bottom:none;}
+
+  /* hero */
+  .hero{
+    padding:72px 56px 56px;max-width:980px;position:relative;
+  }
+  @media (max-width:700px){.hero{padding:48px 20px 36px;}}
+  .hero-term{
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    overflow:hidden;box-shadow:0 0 0 1px rgba(57,255,143,0.05), 0 30px 60px -30px rgba(0,0,0,0.6);
+    margin-top:28px;
+  }
+  .term-bar{
+    display:flex;align-items:center;gap:8px;padding:10px 14px;
+    background:var(--panel-2);border-bottom:1px solid var(--line);
+  }
+  .term-dot{width:10px;height:10px;border-radius:50%;}
+  .term-bar .t1{background:#ff5f56;}.term-bar .t2{background:#ffbd2e;}.term-bar .t3{background:#27c93f;}
+  .term-title{margin-left:8px;font-family:var(--mono);font-size:12px;color:var(--white-dim);}
+  .term-body{font-family:var(--mono);font-size:13.5px;padding:20px 22px;color:var(--white-dim);min-height:150px;}
+  .term-body .line{margin:0 0 6px;white-space:pre-wrap;}
+  .term-body .prompt{color:var(--green);}
+  .caret{display:inline-block;width:8px;height:15px;background:var(--green);vertical-align:-2px;animation:blink 1s step-start infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  .eyebrow{font-family:var(--mono);color:var(--green);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+  .eyebrow::before{content:'';width:18px;height:1px;background:var(--green-dim);}
+  h1.title{
+    font-family:var(--sans);font-weight:800;font-size:clamp(34px,5vw,54px);
+    line-height:1.05;margin:0 0 16px;letter-spacing:-0.5px;
+  }
+  h1.title .accent{color:var(--green);}
+  .lede{color:var(--white-dim);font-size:17px;max-width:620px;margin:0 0 8px;}
+
+  /* section headers */
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px;}
+  .sec-num{font-family:var(--mono);color:var(--green-dim);font-size:14px;}
+  h2{font-size:clamp(24px,3vw,32px);margin:0;letter-spacing:-0.3px;}
+  .sec-kicker{color:var(--white-dim);font-size:15px;margin:8px 0 30px;max-width:680px;}
+
+  p{color:var(--white-dim);font-size:15.5px;}
+  strong{color:var(--white);}
+  h3{font-size:18px;margin:30px 0 10px;color:var(--white);}
+  ul,ol{color:var(--white-dim);font-size:15.5px;padding-left:20px;}
+  li{margin-bottom:6px;}
+  li::marker{color:var(--green-dim);}
+
+  /* terminal code blocks */
+  .term{
+    background:var(--bg-soft);border:1px solid var(--line);border-radius:8px;
+    margin:18px 0;overflow:hidden;position:relative;
+  }
+  .term-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:8px 14px;background:var(--panel-2);border-bottom:1px solid var(--line);
+    font-family:var(--mono);font-size:11.5px;color:var(--white-dim);
+  }
+  .term-head .dots{display:flex;gap:6px;}
+  .term-head .dots span{width:8px;height:8px;border-radius:50%;background:var(--line);}
+  .copy-btn{
+    background:transparent;border:1px solid var(--line);color:var(--white-dim);
+    font-family:var(--mono);font-size:11px;padding:4px 9px;border-radius:5px;
+    cursor:pointer;transition:all .15s;
+  }
+  .copy-btn:hover{border-color:var(--green-dim);color:var(--green);}
+  .copy-btn.copied{border-color:var(--green);color:var(--green);}
+  pre{
+    margin:0;padding:16px 18px;overflow-x:auto;
+    font-family:var(--mono);font-size:13.5px;line-height:1.65;color:var(--white);
+  }
+  pre .c1{color:var(--white-dim);} /* comments */
+  pre .pr{color:var(--green);} /* prompt $ */
+  pre .out{color:var(--white-dim);}
+
+  /* callouts */
+  .callout{
+    border-left:3px solid var(--green-dim);background:var(--panel);
+    padding:14px 18px;border-radius:0 8px 8px 0;margin:18px 0;font-size:14.5px;
+  }
+  .callout.warn{border-left-color:var(--amber);}
+  .callout.warn .ctitle{color:var(--amber);}
+  .callout.danger{border-left-color:var(--red);}
+  .callout.danger .ctitle{color:var(--red);}
+  .callout .ctitle{font-family:var(--mono);color:var(--green);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:block;}
+  .callout p{margin:0;color:var(--white-dim);font-size:14.5px;}
+
+  /* cards grid */
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:24px 0;}
+  @media (max-width:640px){.grid{grid-template-columns:1fr;}}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;
+    transition:border-color .15s, transform .15s;
+  }
+  .card:hover{border-color:var(--green-dim);transform:translateY(-2px);}
+  .card .ic{font-family:var(--mono);color:var(--green);font-size:20px;margin-bottom:8px;display:block;}
+  .card h4{margin:0 0 6px;font-size:15px;color:var(--white);}
+  .card p{margin:0;font-size:13.5px;color:var(--white-dim);}
+
+  /* table */
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px;}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);}
+  th{font-family:var(--mono);color:var(--green);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;}
+  td{color:var(--white-dim);}
+  td code, li code, p code{color:var(--green);background:var(--panel-2);padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:13px;}
+
+  /* checklist */
+  .checklist{list-style:none;padding:0;margin:18px 0;}
+  .checklist li{
+    display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);
+    font-size:14.5px;color:var(--white-dim);
+  }
+  .checklist li:last-child{border-bottom:none;}
+  .checklist .box{
+    flex:none;width:18px;height:18px;border:1.5px solid var(--green-dim);border-radius:4px;margin-top:2px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;
+  }
+  .checklist .box.done{background:var(--green);border-color:var(--green);}
+  .checklist .box.done::after{content:'✓';color:var(--bg);font-size:12px;font-weight:700;}
+  .checklist li.done span.label{color:var(--white-dim);text-decoration:line-through;opacity:.6;}
+
+  /* diagram: client -> vps */
+  .diagram{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin:28px 0;flex-wrap:wrap;
+  }
+  .diagram .box{
+    flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;padding:16px;text-align:center;
+  }
+  .diagram .box.you{border-color:var(--green-dim);}
+  .diagram .box .lbl{font-family:var(--mono);color:var(--green);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+  .diagram .box .desc{font-size:13px;color:var(--white-dim);}
+  .diagram .arrow{font-family:var(--mono);color:var(--green-dim);font-size:20px;flex:none;}
+  @media (max-width:640px){.diagram{flex-direction:column;}.diagram .arrow{transform:rotate(90deg);}}
+
+  /* port table chips */
+  .chip{display:inline-block;background:var(--panel-2);border:1px solid var(--line);color:var(--green);font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:5px;}
+
+  /* quiz */
+  .quiz{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px 24px;margin:22px 0;}
+  .quiz .q{font-weight:600;color:var(--white);margin-bottom:12px;font-size:15px;}
+  .quiz .opts{display:flex;flex-direction:column;gap:8px;}
+  .quiz button.opt{
+    text-align:left;background:var(--bg-soft);border:1px solid var(--line);color:var(--white-dim);
+    padding:10px 14px;border-radius:7px;font-size:14px;cursor:pointer;font-family:var(--sans);transition:all .15s;
+  }
+  .quiz button.opt:hover{border-color:var(--green-dim);}
+  .quiz button.opt.correct{border-color:var(--green);color:var(--green);background:rgba(57,255,143,0.07);}
+  .quiz button.opt.wrong{border-color:var(--red);color:var(--red);background:rgba(255,107,107,0.07);}
+  .quiz .explain{margin-top:12px;font-size:13.5px;color:var(--white-dim);display:none;}
+  .quiz .explain.show{display:block;}
+
+  /* footer / final */
+  .final{
+    padding:64px 56px 90px;max-width:880px;
+  }
+  .badge-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:24px;}
+  .badge{
+    font-family:var(--mono);font-size:12px;color:var(--green);border:1px solid var(--green-dim);
+    padding:6px 12px;border-radius:20px;background:var(--panel);
+  }
+
+  .topline{height:1px;background:linear-gradient(90deg,transparent,var(--green-dim),transparent);margin:0 0 64px;}
+
+  .section-toc-jump{font-family:var(--mono);font-size:12px;color:var(--green-dim);text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-top:36px;}
+  .section-toc-jump:hover{color:var(--green);}
+
+  .kbd{
+    font-family:var(--mono);background:var(--panel-2);border:1px solid var(--line);
+    border-radius:4px;padding:1px 6px;font-size:12.5px;color:var(--white);
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- ========== SIDEBAR ========== -->
+  <nav class="sidebar">
+    <div class="brand"><span class="dot"></span><span>root@masterclass</span></div>
+    <p class="sub">// VPS + Linux + Security syllabus</p>
+    <div class="progress-rail"><div class="progress-fill" id="progressFill"></div></div>
+    <ul class="navlist" id="navlist">
+      <li><a href="#intro"><span class="n">00</span>Boot Sequence</a></li>
+      <li><a href="#vps"><span class="n">01</span>What is a VPS</a></li>
+      <li><a href="#linux"><span class="n">02</span>Linux Fundamentals</a></li>
+      <li><a href="#ubuntu"><span class="n">03</span>Ubuntu Server Setup</a></li>
+      <li><a href="#ssh"><span class="n">04</span>Connecting via SSH</a></li>
+      <li><a href="#hardening"><span class="n">05</span>Hardening &amp; Firewall</a></li>
+      <li><a href="#redis"><span class="n">06</span>Installing Redis</a></li>
+      <li><a href="#ssl"><span class="n">07</span>SSL / TLS &amp; Domains</a></li>
+      <li><a href="#stack"><span class="n">08</span>Putting It Together</a></li>
+      <li><a href="#domain"><span class="n">09</span>Domain → VPS Setup</a></li>
+      <li><a href="#docker"><span class="n">10</span>Docker &amp; Docker Hub</a></li>
+      <li><a href="#fullstack"><span class="n">11</span>Frontend + Backend + DB</a></li>
+      <li><a href="#quiz"><span class="n">12</span>Knowledge Check</a></li>
+      <li><a href="#cheatsheet"><span class="n">13</span>Cheat Sheet</a></li>
+    </ul>
+  </nav>
+
+  <!-- ========== MAIN ========== -->
+  <main>
+
+    <!-- HERO / INTRO -->
+    <section class="hero" id="intro">
+      <div class="eyebrow">masterclass · 01 of 14 modules</div>
+      <h1 class="title">From zero to a <span class="accent">secured Linux server</span><br>you actually understand.</h1>
+      <p class="lede">A complete, hands-on path through VPS, Linux, Ubuntu, SSH, firewalls, Redis, and SSL — explained in plain language, with the real commands you'll type, in order.</p>
+
+      <div class="hero-term">
+        <div class="term-bar">
+          <span class="term-dot t1"></span><span class="term-dot t2"></span><span class="term-dot t3"></span>
+          <span class="term-title">you@local — bash</span>
+        </div>
+        <div class="term-body" id="bootTerm">
+          <p class="line"><span class="prompt">$</span> whoami</p>
+        </div>
+      </div>
+      <a class="section-toc-jump" href="#vps">↓ start the class</a>
+    </section>
+
+    <!-- 01 WHAT IS A VPS -->
+    <section class="section" id="vps">
+      <div class="sec-head"><span class="sec-num">01</span><h2>What is a VPS?</h2></div>
+      <p class="sec-kicker">Before you connect to anything, know what you're actually renting.</p>
+
+      <p><strong>VPS stands for Virtual Private Server.</strong> A big physical machine sitting in a data center gets sliced into several independent virtual machines using a layer called a <em>hypervisor</em>. Each slice — your VPS — gets its own dedicated chunk of CPU, RAM, disk, and a public IP address. It behaves exactly like a full computer, except you reach it over the internet instead of sitting in front of it.</p>
+
+      <div class="diagram">
+        <div class="box"><div class="lbl">Physical Server</div><div class="desc">One real machine in a data center</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">Hypervisor</div><div class="desc">Slices it into isolated virtual machines</div></div>
+        <div class="arrow">→</div>
+        <div class="box you"><div class="lbl">Your VPS</div><div class="desc">Your own CPU, RAM, disk &amp; IP</div></div>
+      </div>
+
+      <h3>Why not just use shared hosting?</h3>
+      <p>Shared hosting puts your website on a server alongside hundreds of others with no real isolation — one noisy neighbor can slow everyone down, and you can't install custom software. A VPS gives you <strong>root access</strong>: full control to install anything, run any service (like Redis, a database, or a custom app), and configure the operating system exactly how you want.</p>
+
+      <div class="grid">
+        <div class="card"><span class="ic">▣</span><h4>Dedicated resources</h4><p>Your RAM and CPU allocation isn't shared the way it is on basic shared hosting.</p></div>
+        <div class="card"><span class="ic">⌘</span><h4>Root access</h4><p>You're the administrator. You can install, configure, and break things — and fix them.</p></div>
+        <div class="card"><span class="ic">⇄</span><h4>Public IP address</h4><p>Your server has its own address on the internet, reachable from anywhere.</p></div>
+        <div class="card"><span class="ic">⎘</span><h4>Pay for what you pick</h4><p>You choose the OS, the RAM/disk tier, and the region your server lives in.</p></div>
+      </div>
+
+      <div class="callout">
+        <span class="ctitle">Common providers</span>
+        <p>DigitalOcean, Linode (Akamai), Vultr, AWS Lightsail, Hetzner, and OVH are popular places to spin up a VPS. The setup steps in this masterclass apply to virtually all of them once you've created the server and have its IP address.</p>
+      </div>
+    </section>
+
+    <!-- 02 LINUX FUNDAMENTALS -->
+    <section class="section" id="linux">
+      <div class="sec-head"><span class="sec-num">02</span><h2>Linux Fundamentals</h2></div>
+      <p class="sec-kicker">The operating system that runs almost every server on the internet.</p>
+
+      <p><strong>Linux</strong> is a free, open-source operating system kernel originally written by Linus Torvalds in 1991. Unlike Windows, it's built around a philosophy of small tools that do one job well, configuration via plain text files, and a strict permission system — which is exactly why it dominates the server world.</p>
+
+      <h3>Distributions ("distros")</h3>
+      <p>Linux itself is just the kernel — the core engine. A <strong>distribution</strong> packages that kernel with system tools, a package manager, and default configuration into something usable. Ubuntu, Debian, CentOS, Fedora, and Arch are all distributions of the same underlying Linux kernel, with different philosophies and tools.</p>
+
+      <table>
+        <tr><th>Concept</th><th>What it means</th></tr>
+        <tr><td>Kernel</td><td>The core program that talks directly to hardware (CPU, memory, disk).</td></tr>
+        <tr><td>Shell</td><td>The command-line interpreter — <code>bash</code> is the most common — where you type commands.</td></tr>
+        <tr><td>Filesystem</td><td>Everything is a file. Configuration, devices, and processes all live under <code>/</code>.</td></tr>
+        <tr><td>Package manager</td><td>Installs and updates software. Ubuntu uses <code>apt</code>.</td></tr>
+        <tr><td>Root user</td><td>The administrator account with unrestricted access — usually accessed via <code>sudo</code>.</td></tr>
+      </table>
+
+      <h3>Commands you'll use constantly</h3>
+      <div class="term">
+        <div class="term-head"><span>essential commands</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="c1"># move around the filesystem</span>
+<span class="pr">$</span> pwd                  <span class="c1"># show current directory</span>
+<span class="pr">$</span> ls -la                <span class="c1"># list files, including hidden ones</span>
+<span class="pr">$</span> cd /etc/nginx         <span class="c1"># change directory</span>
+
+<span class="c1"># read & edit files</span>
+<span class="pr">$</span> cat file.txt          <span class="c1"># print file contents</span>
+<span class="pr">$</span> nano file.txt         <span class="c1"># simple terminal text editor</span>
+
+<span class="c1"># permissions & ownership</span>
+<span class="pr">$</span> sudo whoami           <span class="c1"># run a command as root</span>
+<span class="pr">$</span> chmod 600 key.pem     <span class="c1"># restrict file permissions</span>
+
+<span class="c1"># processes</span>
+<span class="pr">$</span> ps aux                <span class="c1"># list running processes</span>
+<span class="pr">$</span> systemctl status nginx<span class="c1"># check if a service is running</span></pre>
+      </div>
+
+      <div class="callout warn">
+        <span class="ctitle">Why permissions matter</span>
+        <p>Linux file permissions (read/write/execute, for owner/group/others) are the foundation of server security. A misconfigured permission — like a private key readable by everyone — is one of the most common real-world breach causes. You'll set this correctly in the SSH section.</p>
+      </div>
+    </section>
+
+    <!-- 03 UBUNTU SETUP -->
+    <section class="section" id="ubuntu">
+      <div class="sec-head"><span class="sec-num">03</span><h2>Ubuntu Server Setup</h2></div>
+      <p class="sec-kicker">Choosing and preparing the distribution you'll actually run.</p>
+
+      <p><strong>Ubuntu</strong> is a Linux distribution maintained by Canonical, and it's the most widely used distro for VPS hosting — long-term support (LTS) releases get 5 years of security updates, predictable tooling, and the largest community, so almost every guide and package assumes Ubuntu by default.</p>
+
+      <h3>Step 1 — Provision the server</h3>
+      <p>When creating your VPS through any provider, you'll typically choose:</p>
+      <ul>
+        <li><strong>OS image:</strong> Ubuntu 24.04 LTS or 22.04 LTS (stick to LTS releases for servers)</li>
+        <li><strong>Size/plan:</strong> 1–2GB RAM is enough to learn on; scale up later</li>
+        <li><strong>Authentication:</strong> choose <em>SSH key</em> over password if offered — covered next section</li>
+        <li><strong>Region:</strong> pick one geographically close to your users</li>
+      </ul>
+
+      <h3>Step 2 — First login & update</h3>
+      <p>The very first thing you do on any fresh server, before installing anything else, is update the package index and upgrade existing packages:</p>
+      <div class="term">
+        <div class="term-head"><span>first boot</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> sudo apt update                 <span class="c1"># refresh package list</span>
+<span class="pr">$</span> sudo apt upgrade -y             <span class="c1"># install available updates</span>
+<span class="pr">$</span> sudo timedatectl set-timezone UTC <span class="c1"># keep server time consistent</span>
+<span class="pr">$</span> sudo reboot                     <span class="c1"># apply kernel updates if any</span></pre>
+      </div>
+
+      <h3>Step 3 — Create a non-root user</h3>
+      <p>You'll log in as <code>root</code> initially, but running everything as root daily is risky — one mistyped command can damage the system. Create a regular user with sudo privileges instead:</p>
+      <div class="term">
+        <div class="term-head"><span>create a sudo user</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> adduser yourname             <span class="c1"># creates the user, prompts for a password</span>
+<span class="pr">$</span> usermod -aG sudo yourname    <span class="c1"># grants sudo (admin) privileges</span>
+<span class="pr">$</span> su - yourname                <span class="c1"># switch into the new user</span></pre>
+      </div>
+
+      <div class="callout">
+        <span class="ctitle">Mental model</span>
+        <p>Think of <code>root</code> as the master key to the building, and your new user as a keycard with admin permission. You use the keycard daily; the master key stays locked away unless truly needed.</p>
+      </div>
+    </section>
+
+    <!-- 04 SSH -->
+    <section class="section" id="ssh">
+      <div class="sec-head"><span class="sec-num">04</span><h2>Connecting via SSH</h2></div>
+      <p class="sec-kicker">SSH is the secure tunnel between your laptop and your VPS.</p>
+
+      <p><strong>SSH (Secure Shell)</strong> is an encrypted protocol that lets you open a remote terminal on another machine. Everything you type, and everything the server sends back, travels through an encrypted channel — nobody on the network in between can read it.</p>
+
+      <h3>Method A — Password login (simplest, weaker)</h3>
+      <div class="term">
+        <div class="term-head"><span>connect with a password</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> ssh yourname@your_server_ip
+<span class="out">yourname@your_server_ip's password: ********</span>
+<span class="out">Welcome to Ubuntu 24.04 LTS</span></pre>
+      </div>
+
+      <h3>Method B — SSH key pair (recommended)</h3>
+      <p>An SSH key pair has two parts: a <strong>private key</strong> that never leaves your laptop, and a <strong>public key</strong> that you place on the server. The server can verify your private key matches without the key ever being transmitted — this is far stronger than a password and immune to brute-force guessing.</p>
+
+      <div class="term">
+        <div class="term-head"><span>generate a key pair (on your local machine)</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> ssh-keygen -t ed25519 -C "your_email@example.com"
+<span class="out">Generating public/private ed25519 key pair.
+Enter file in which to save the key (/home/you/.ssh/id_ed25519):</span> <span class="prompt">↵</span>
+<span class="out">Enter passphrase (empty for no passphrase):</span> ********</pre>
+      </div>
+
+      <div class="term">
+        <div class="term-head"><span>copy your public key to the server</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> ssh-copy-id yourname@your_server_ip
+<span class="c1"># or manually:</span>
+<span class="pr">$</span> cat ~/.ssh/id_ed25519.pub | ssh yourname@your_server_ip "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"</pre>
+      </div>
+
+      <div class="term">
+        <div class="term-head"><span>now log in — no password asked</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> ssh yourname@your_server_ip
+<span class="out">Welcome to Ubuntu 24.04 LTS (GNU/Linux)</span></pre>
+      </div>
+
+      <div class="callout danger">
+        <span class="ctitle">Critical permission rule</span>
+        <p>Your private key file must not be readable by other users, or SSH will refuse to use it. Run <code>chmod 600 ~/.ssh/id_ed25519</code> on your local machine to lock this down. Never share or upload your private key — only the <code>.pub</code> file ever leaves your computer.</p>
+      </div>
+
+      <h3>Once keys work, disable password login</h3>
+      <p>This single step blocks the most common attack vector against fresh servers: automated bots brute-forcing SSH passwords 24/7.</p>
+      <div class="term">
+        <div class="term-head"><span>/etc/ssh/sshd_config</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> sudo nano /etc/ssh/sshd_config
+<span class="c1"># find and set these two lines:</span>
+PasswordAuthentication no
+PermitRootLogin no
+
+<span class="c1"># then restart the SSH service</span>
+<span class="pr">$</span> sudo systemctl restart ssh</pre>
+      </div>
+
+      <div class="callout warn">
+        <span class="ctitle">Don't lock yourself out</span>
+        <p>Test your key-based login in a <em>second</em> terminal window before closing your current session and before disabling passwords. If the key login fails and you've already disabled passwords, you can be locked out entirely.</p>
+      </div>
+    </section>
+
+    <!-- 05 HARDENING / FIREWALL -->
+    <section class="section" id="hardening">
+      <div class="sec-head"><span class="sec-num">05</span><h2>Hardening &amp; Firewall</h2></div>
+      <p class="sec-kicker">Close every door except the ones you're actively using.</p>
+
+      <p>A fresh VPS is reachable on every port unless you tell it otherwise. <strong>UFW (Uncomplicated Firewall)</strong> is Ubuntu's friendly front-end to the kernel's firewall (iptables/nftables) — it lets you allow or block traffic by port with one-line commands.</p>
+
+      <h3>Set up UFW</h3>
+      <div class="term">
+        <div class="term-head"><span>configure the firewall</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> sudo ufw default deny incoming    <span class="c1"># block everything by default</span>
+<span class="pr">$</span> sudo ufw default allow outgoing   <span class="c1"># let the server reach out freely</span>
+<span class="pr">$</span> sudo ufw allow OpenSSH            <span class="c1"># keep your SSH access alive!</span>
+<span class="pr">$</span> sudo ufw allow 80/tcp              <span class="c1"># HTTP</span>
+<span class="pr">$</span> sudo ufw allow 443/tcp             <span class="c1"># HTTPS</span>
+<span class="pr">$</span> sudo ufw enable
+<span class="out">Command may disrupt existing ssh connections. Proceed (y|n)?</span> y
+<span class="pr">$</span> sudo ufw status verbose</pre>
+      </div>
+
+      <table>
+        <tr><th>Port</th><th>Service</th><th>Should it be open?</th></tr>
+        <tr><td><span class="chip">22</span></td><td>SSH</td><td>Yes — your access lifeline</td></tr>
+        <tr><td><span class="chip">80</span></td><td>HTTP</td><td>Yes, if serving a website</td></tr>
+        <tr><td><span class="chip">443</span></td><td>HTTPS</td><td>Yes, if using SSL</td></tr>
+        <tr><td><span class="chip">6379</span></td><td>Redis</td><td>No — keep internal only (see next module)</td></tr>
+      </table>
+
+      <h3>Stop brute-force attempts: Fail2Ban</h3>
+      <p><strong>Fail2Ban</strong> watches log files for repeated failed login attempts and temporarily bans the offending IP address at the firewall level — an automatic bouncer for your server.</p>
+      <div class="term">
+        <div class="term-head"><span>install fail2ban</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> sudo apt install fail2ban -y
+<span class="pr">$</span> sudo systemctl enable --now fail2ban
+<span class="pr">$</span> sudo fail2ban-client status sshd</pre>
+      </div>
+
+      <div class="checklist" id="hardenChecklist">
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">SSH key login working, password login disabled</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">UFW enabled with only required ports open</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">Fail2Ban installed and watching SSH</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">Non-root sudo user created, root login disabled</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">System packages fully updated</span></li>
+      </div>
+    </section>
+
+    <!-- 06 REDIS -->
+    <section class="section" id="redis">
+      <div class="sec-head"><span class="sec-num">06</span><h2>Installing Redis</h2></div>
+      <p class="sec-kicker">A fast, in-memory data store you'll use for caching, sessions, and queues.</p>
+
+      <p><strong>Redis</strong> (REmote DIctionary Server) is an in-memory key-value data store. Because data lives in RAM rather than on disk, reads and writes happen in microseconds — it's commonly used for caching database results, storing user sessions, rate-limiting, and message queues between services.</p>
+
+      <h3>Install Redis on Ubuntu</h3>
+      <div class="term">
+        <div class="term-head"><span>install &amp; start</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> sudo apt update
+<span class="pr">$</span> sudo apt install redis-server -y
+<span class="pr">$</span> sudo systemctl enable redis-server   <span class="c1"># start on boot</span>
+<span class="pr">$</span> sudo systemctl status redis-server   <span class="c1"># confirm it's running</span></pre>
+      </div>
+
+      <h3>Test it works</h3>
+      <div class="term">
+        <div class="term-head"><span>redis-cli</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> redis-cli ping
+<span class="out">PONG</span>
+<span class="pr">$</span> redis-cli
+<span class="out">127.0.0.1:6379></span> SET hello "world"
+<span class="out">OK</span>
+<span class="out">127.0.0.1:6379></span> GET hello
+<span class="out">"world"</span></pre>
+      </div>
+
+      <h3>Secure Redis — this step is non-negotiable</h3>
+      <p>By default, Redis has <strong>no password</strong> and may bind to all network interfaces. An unprotected Redis instance exposed to the internet is one of the most commonly exploited misconfigurations — attackers actively scan for it.</p>
+
+      <div class="term">
+        <div class="term-head"><span>/etc/redis/redis.conf</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> sudo nano /etc/redis/redis.conf
+
+<span class="c1"># 1. bind only to localhost — never expose Redis directly to the internet</span>
+bind 127.0.0.1 ::1
+
+<span class="c1"># 2. require a password</span>
+requirepass a_long_random_password_here
+
+<span class="c1"># 3. restart for changes to take effect</span>
+<span class="pr">$</span> sudo systemctl restart redis-server
+
+<span class="c1"># 4. confirm the password is required</span>
+<span class="pr">$</span> redis-cli
+<span class="out">127.0.0.1:6379></span> PING
+<span class="out">(error) NOAUTH Authentication required.</span>
+<span class="out">127.0.0.1:6379></span> AUTH a_long_random_password_here
+<span class="out">OK</span></pre>
+      </div>
+
+      <div class="callout danger">
+        <span class="ctitle">Never expose port 6379 publicly</span>
+        <p>In the firewall module, port 6379 was deliberately left closed. Your application server talks to Redis over <code>localhost</code> or a private network — Redis should never be reachable from the public internet directly.</p>
+      </div>
+    </section>
+
+    <!-- 07 SSL -->
+    <section class="section" id="ssl">
+      <div class="sec-head"><span class="sec-num">07</span><h2>SSL / TLS &amp; Domains</h2></div>
+      <p class="sec-kicker">Encrypt traffic between your visitors and your server — for free.</p>
+
+      <p><strong>SSL/TLS</strong> encrypts the connection between a browser and your server, turning <code>http://</code> into <code>https://</code>. It proves to visitors that they're really talking to your server (not an impostor), and that nobody in between can read or tamper with the traffic. <strong>Let's Encrypt</strong> is a free, automated certificate authority that makes this a five-minute task.</p>
+
+      <h3>Step 1 — Point a domain at your server</h3>
+      <p>Before requesting a certificate, your domain needs an <strong>A record</strong> pointing to your VPS's public IP address. This is set in your domain registrar's DNS panel:</p>
+      <table>
+        <tr><th>Type</th><th>Host</th><th>Value</th></tr>
+        <tr><td>A</td><td>@</td><td>your_server_ip</td></tr>
+        <tr><td>A</td><td>www</td><td>your_server_ip</td></tr>
+      </table>
+
+      <h3>Step 2 — Install a web server (Nginx)</h3>
+      <div class="term">
+        <div class="term-head"><span>install nginx</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> sudo apt install nginx -y
+<span class="pr">$</span> sudo systemctl enable --now nginx</pre>
+      </div>
+
+      <h3>Step 3 — Get a free SSL certificate with Certbot</h3>
+      <div class="term">
+        <div class="term-head"><span>certbot</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> sudo apt install certbot python3-certbot-nginx -y
+<span class="pr">$</span> sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+<span class="out">Successfully received certificate.
+Certificate is saved at: /etc/letsencrypt/live/yourdomain.com/fullchain.pem
+Deploying certificate...
+Congratulations! You have successfully enabled HTTPS</span></pre>
+      </div>
+
+      <p>Certbot automatically edits your Nginx config to redirect HTTP to HTTPS and renews itself — Let's Encrypt certificates expire every 90 days, and Certbot installs a scheduled renewal job for you:</p>
+      <div class="term">
+        <div class="term-head"><span>verify auto-renewal</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> sudo certbot renew --dry-run
+<span class="out">Congratulations, all simulated renewals succeeded</span></pre>
+      </div>
+
+      <div class="callout">
+        <span class="ctitle">What "padlock secure" actually means</span>
+        <p>The browser padlock confirms the connection is encrypted and the certificate matches the domain — it says nothing about whether the site's content or backend is trustworthy. SSL protects data in transit; it isn't a guarantee of overall security.</p>
+      </div>
+    </section>
+
+    <!-- 08 STACK -->
+    <section class="section" id="stack">
+      <div class="sec-head"><span class="sec-num">08</span><h2>Putting It Together</h2></div>
+      <p class="sec-kicker">How every piece you just learned fits into one request.</p>
+
+      <p>Here's what happens, top to bottom, when a visitor loads your HTTPS site on a server you've hardened with everything above:</p>
+
+      <div class="diagram" style="flex-wrap:wrap;">
+        <div class="box"><div class="lbl">Browser</div><div class="desc">Requests https://yourdomain.com</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">UFW Firewall</div><div class="desc">Allows port 443 only</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">Nginx + TLS Cert</div><div class="desc">Decrypts &amp; serves the request</div></div>
+        <div class="arrow">→</div>
+        <div class="box you"><div class="lbl">Redis (localhost)</div><div class="desc">Returns cached data instantly</div></div>
+      </div>
+
+      <p>Meanwhile, <strong>Fail2Ban</strong> is quietly watching the SSH log in the background, and the only way <em>you</em> get in to manage any of it is through an SSH key — never a password.</p>
+
+      <div class="callout">
+        <span class="ctitle">This is the same shape as production</span>
+        <p>Real production stacks add load balancers, managed databases, and monitoring — but the core shape (firewall → reverse proxy with TLS → app → cache) is exactly what you just set up by hand.</p>
+      </div>
+    </section>
+
+    <!-- 09 DOMAIN -->
+    <section class="section" id="domain">
+      <div class="sec-head"><span class="sec-num">09</span><h2>Domain → VPS Setup</h2></div>
+      <p class="sec-kicker">Unga domain (xyz.com) ah VPS kooda eppadi connect pannanum — full worked example.</p>
+
+      <p>Domain oda VPS ku ஒரு direct connection illa — DNS thaan andha bridge. Neenga <code>xyz.com</code> nu browser la type panna, andha request first ஒரு <strong>DNS resolver</strong> kitta poyi, "xyz.com oda IP address enna?" nu kekkum. Andha answer than unga VPS IP — appo dhan browser nera unga server kitta connect aagum.</p>
+
+      <div class="diagram" style="flex-wrap:wrap;">
+        <div class="box"><div class="lbl">Browser</div><div class="desc">Types xyz.com</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">DNS Lookup</div><div class="desc">"xyz.com oda IP enna?"</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">Registrar's DNS</div><div class="desc">Returns your VPS IP</div></div>
+        <div class="arrow">→</div>
+        <div class="box you"><div class="lbl">Your VPS</div><div class="desc">Nginx serves the site</div></div>
+      </div>
+
+      <h3>Step 1 — Domain vaanga (oru registrar la)</h3>
+      <p>Namecheap, GoDaddy, Google Domains, Hostinger — edhu venalum vaangalam. <code>xyz.com</code> nu vaangina udane, andha registrar oda dashboard la "DNS Management" / "DNS Zone Editor" nu oru section irukum — adhula thaan namma records add pannanum.</p>
+
+      <h3>Step 2 — A record point pannunga unga VPS IP ku</h3>
+      <p>Registrar dashboard la, இந்த records add pannunga (your_server_ip ah unga VPS oda real public IP vechu replace pannunga):</p>
+      <table>
+        <tr><th>Type</th><th>Host</th><th>Value</th><th>TTL</th></tr>
+        <tr><td>A</td><td>@</td><td>your_server_ip</td><td>Auto / 3600</td></tr>
+        <tr><td>A</td><td>www</td><td>your_server_ip</td><td>Auto / 3600</td></tr>
+      </table>
+      <p><code>@</code> nu vechathu root domain ku (<code>xyz.com</code>), <code>www</code> nu vechathu (<code>www.xyz.com</code>) ku. Rendu um same IP ku point pannina, both versions work aagum.</p>
+
+      <div class="callout warn">
+        <span class="ctitle">DNS propagation time</span>
+        <p>Records add panna udane work aagathu — DNS changes worldwide la propagate aaga <strong>5 minutes to 48 hours</strong> aagalam (usually 15–30 mins). <code>nslookup xyz.com</code> or dnschecker.org use panni check pannalam edhuvum propagate aacha nu.</p>
+      </div>
+
+      <h3>Step 3 — Server side la confirm pannunga</h3>
+      <div class="term">
+        <div class="term-head"><span>check DNS propagation</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> nslookup xyz.com
+<span class="out">Name:    xyz.com
+Address: your_server_ip   ← idhu match aagi irukanum</span>
+
+<span class="pr">$</span> ping xyz.com
+<span class="out">PING xyz.com (your_server_ip): 56 data bytes</span></pre>
+      </div>
+
+      <h3>Step 4 — Nginx la domain configure pannunga</h3>
+      <p>Module 07 la nginx install pannirukom. Ippo andha domain ku specific ஒரு server block (virtual host) create pannanum:</p>
+      <div class="term">
+        <div class="term-head"><span>/etc/nginx/sites-available/xyz.com</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> sudo nano /etc/nginx/sites-available/xyz.com</pre>
+<pre>server {
+    listen 80;
+    server_name xyz.com www.xyz.com;
+
+    root /var/www/xyz.com;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}</pre>
+        <pre><span class="pr">$</span> sudo ln -s /etc/nginx/sites-available/xyz.com /etc/nginx/sites-enabled/
+<span class="pr">$</span> sudo nginx -t              <span class="c1"># test config for errors</span>
+<span class="pr">$</span> sudo systemctl reload nginx</pre>
+      </div>
+
+      <h3>Step 5 — SSL kuduthu https://xyz.com aakkunga</h3>
+      <p>Module 07 oda certbot command ah ippo real domain kooda run pannunga:</p>
+      <div class="term">
+        <div class="term-head"><span>get the certificate</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> sudo certbot --nginx -d xyz.com -d www.xyz.com
+<span class="out">Congratulations! You have successfully enabled HTTPS on
+https://xyz.com and https://www.xyz.com</span></pre>
+      </div>
+
+      <div class="callout">
+        <span class="ctitle">Summary — oru line la</span>
+        <p>Domain registrar la A record → VPS IP ku point pannunga, Nginx la andha domain ku server block create pannunga, Certbot run pannunga SSL ku. Adhu thaan whole flow.</p>
+      </div>
+    </section>
+
+    <!-- 10 DOCKER -->
+    <section class="section" id="docker">
+      <div class="sec-head"><span class="sec-num">10</span><h2>Docker &amp; Docker Hub</h2></div>
+      <p class="sec-kicker">Ellam manually install panradhu kashtam — Docker use pannina romba easy.</p>
+
+      <p>Ippadi nenaikalam: neenga app run panna Node.js venum, Python venum, specific version venum, database venum — ellam VPS la separately install pannina, "idhu en machine la work aagudhu, server la work aagala" problem varum. <strong>Docker</strong> idha solve pannudhu — unga app ah, adhuku venum ella dependencies oda sernthu, ஒரு <strong>container</strong> nu sealed box la pack pannidum. Andha box, eppo eங்க run pannalum same maari work aagum.</p>
+
+      <div class="grid">
+        <div class="card"><span class="ic">▣</span><h4>Image</h4><p>Unga app + dependencies oda blueprint — ஒரு frozen snapshot, run aagavum illa.</p></div>
+        <div class="card"><span class="ic">⌘</span><h4>Container</h4><p>Andha image oda live, running version. Same image la irundhu multiple containers start panna mudiyum.</p></div>
+        <div class="card"><span class="ic">⇄</span><h4>Dockerfile</h4><p>Image ah eppadi build pannanum nu sollra step-by-step recipe (text file).</p></div>
+        <div class="card"><span class="ic">⎘</span><h4>Docker Hub</h4><p>Images store panni share panna oru online registry — GitHub mathiri, but images ku.</p></div>
+      </div>
+
+      <h3>VM vs Docker container — difference enna?</h3>
+      <table>
+        <tr><th>VPS (Virtual Machine)</th><th>Docker Container</th></tr>
+        <tr><td>Full operating system kooda boot aagum</td><td>Host OS oda kernel ah share pannikkum — light weight</td></tr>
+        <tr><td>Start aaga seconds to minutes edukum</td><td>Start aaga milliseconds — almost instant</td></tr>
+        <tr><td>GBs of disk space edukum</td><td>MBs matter — much smaller</td></tr>
+        <tr><td>Unga whole VPS thaan ஒரு VM</td><td>Same VPS la pala containers run aagalam</td></tr>
+      </table>
+
+      <h3>Step 1 — Docker install pannunga (Ubuntu VPS la)</h3>
+      <div class="term">
+        <div class="term-head"><span>install docker</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> sudo apt update
+<span class="pr">$</span> sudo apt install ca-certificates curl gnupg -y
+<span class="pr">$</span> curl -fsSL https://get.docker.com -o get-docker.sh
+<span class="pr">$</span> sudo sh get-docker.sh
+<span class="pr">$</span> sudo usermod -aG docker $USER   <span class="c1"># sudo illama docker run panna</span>
+<span class="pr">$</span> newgrp docker
+<span class="pr">$</span> docker --version
+<span class="out">Docker version 27.x.x</span></pre>
+      </div>
+
+      <h3>Step 2 — Docker Hub la irundhu image run pannunga</h3>
+      <p>Docker Hub la already-built images lakhs irukum — nginx, postgres, redis, node, edhu venalum. Pull pannitu direct run pannalam:</p>
+      <div class="term">
+        <div class="term-head"><span>pull &amp; run from Docker Hub</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> docker pull nginx                       <span class="c1"># download the image</span>
+<span class="pr">$</span> docker run -d -p 8080:80 nginx          <span class="c1"># run it as a container</span>
+<span class="pr">$</span> docker ps                              <span class="c1"># list running containers</span>
+<span class="out">CONTAINER ID   IMAGE   PORTS                  STATUS
+a1b2c3d4e5f6   nginx   0.0.0.0:8080->80/tcp   Up 5 seconds</span></pre>
+      </div>
+
+      <h3>Step 3 — Unga own app ah Dockerize pannunga</h3>
+      <p>Example: ஒரு Node.js backend irundhuchu nu vechukalam. Project folder la <code>Dockerfile</code> create pannunga:</p>
+      <div class="term">
+        <div class="term-head"><span>Dockerfile</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="c1"># base image — already has Node.js installed</span>
+FROM node:20-alpine
+
+WORKDIR /app
+
+<span class="c1"># copy dependency files first (caching benefit)</span>
+COPY package*.json ./
+RUN npm install
+
+<span class="c1"># copy the rest of the app</span>
+COPY . .
+
+EXPOSE 5000
+CMD ["node", "server.js"]</pre>
+      </div>
+
+      <div class="term">
+        <div class="term-head"><span>build &amp; run your image</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> docker build -t myapp-backend .
+<span class="pr">$</span> docker run -d -p 5000:5000 myapp-backend
+<span class="pr">$</span> docker logs -f &lt;container_id&gt;      <span class="c1"># live logs paaka</span></pre>
+      </div>
+
+      <h3>Step 4 — Docker Hub ku push pannunga (optional, share panna)</h3>
+      <div class="term">
+        <div class="term-head"><span>push to Docker Hub</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> docker login
+<span class="pr">$</span> docker tag myapp-backend yourusername/myapp-backend:v1
+<span class="pr">$</span> docker push yourusername/myapp-backend:v1
+<span class="c1"># indha image ah ippo edhu VPS layum pull panni run pannalam:</span>
+<span class="pr">$</span> docker pull yourusername/myapp-backend:v1</pre>
+      </div>
+
+      <div class="callout">
+        <span class="ctitle">Why idhu romba useful</span>
+        <p>ஒரு time build pannina image ah, edhu VPS layum, edhu laptop layum, exact same maari run aagum — "works on my machine" problem completely solve aagidum. Adhu mattum illa, multiple services (frontend, backend, database) ah easy ah ஒரு place la manage panna mudiyum — next module la paakalam.</p>
+      </div>
+    </section>
+
+    <!-- 11 FULLSTACK -->
+    <section class="section" id="fullstack">
+      <div class="sec-head"><span class="sec-num">11</span><h2>Frontend + Backend + Database</h2></div>
+      <p class="sec-kicker">Moonu pieces ah eppadi ஒரே VPS la connect panni run pannanum — Docker Compose use pannitu.</p>
+
+      <p>Real app la moonu separate pieces irukum: <strong>frontend</strong> (React/Vue — user paaka udhadhu), <strong>backend</strong> (Node/Express/Django — logic &amp; API), <strong>database</strong> (Postgres/MySQL/MongoDB — data store pannudhu). Idha moonu um separate Docker containers ah run panni, <strong>Docker Compose</strong> use panni ஒரே command la start pannalam — and ellame ஒரு private network la communicate pannikkum.</p>
+
+      <div class="diagram" style="flex-wrap:wrap;">
+        <div class="box"><div class="lbl">Browser</div><div class="desc">xyz.com</div></div>
+        <div class="arrow">→</div>
+        <div class="box you"><div class="lbl">Nginx (host)</div><div class="desc">SSL + reverse proxy</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">Frontend container</div><div class="desc">Port 3000 → serves React build</div></div>
+      </div>
+      <div class="diagram" style="flex-wrap:wrap;">
+        <div class="box"><div class="lbl">Frontend</div><div class="desc">calls /api/...</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">Backend container</div><div class="desc">Port 5000 → Express API</div></div>
+        <div class="arrow">→</div>
+        <div class="box you"><div class="lbl">Database container</div><div class="desc">Postgres — internal Docker network only</div></div>
+      </div>
+
+      <h3>Folder structure</h3>
+      <div class="term">
+        <div class="term-head"><span>project layout</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre>myapp/
+├── frontend/
+│   ├── Dockerfile
+│   └── ... (React app)
+├── backend/
+│   ├── Dockerfile
+│   └── ... (Express API)
+└── docker-compose.yml   ← idhu thaan ellame connect pannudhu</pre>
+      </div>
+
+      <h3>docker-compose.yml — moonu services um ஒரே file la</h3>
+      <p>Idhu thaan key piece. Ovvoru service ku ஒரு name kudukurom (<code>frontend</code>, <code>backend</code>, <code>db</code>) — Docker Compose automatic ah ஒரு internal network create pannidum, andha service names ah hostname ah use pannikkalam.</p>
+      <div class="term">
+        <div class="term-head"><span>docker-compose.yml</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre>version: "3.9"
+
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://appuser:secretpass@db:5432/appdb
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=appuser
+      - POSTGRES_PASSWORD=secretpass
+      - POSTGRES_DB=appdb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    <span class="c1"># note: no "ports" exposed publicly — internal access only</span>
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --requirepass secretpass
+
+volumes:
+  pgdata:</pre>
+      </div>
+
+      <div class="callout">
+        <span class="ctitle">Key idea — service name = hostname</span>
+        <p>Backend container kulla, database ah connect panna <code>localhost</code> use pannama, <code>db</code> nu service name ah hostname ah use pannuvom (<code>DATABASE_URL=...@db:5432/...</code>). Docker Compose internal DNS, andha name ah automatic ah correct container IP ku resolve pannidum.</p>
+      </div>
+
+      <h3>Everything ஒரு command la start pannunga</h3>
+      <div class="term">
+        <div class="term-head"><span>launch the full stack</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> cd myapp
+<span class="pr">$</span> docker compose up -d --build
+<span class="out">[+] Running 4/4
+ ✔ Container myapp-db-1        Started
+ ✔ Container myapp-redis-1     Started
+ ✔ Container myapp-backend-1   Started
+ ✔ Container myapp-frontend-1  Started</span>
+
+<span class="pr">$</span> docker compose ps        <span class="c1"># check all 4 running</span>
+<span class="pr">$</span> docker compose logs -f backend   <span class="c1"># live logs of one service</span></pre>
+      </div>
+
+      <h3>Final step — Nginx ah front la vechu, domain + SSL connect pannunga</h3>
+      <p>VPS la directly frontend (3000) and backend (5000) ports expose pannama, Nginx ah front la vechu, andha rendu ports ku internally route pannuvom — public ah 443 (HTTPS) mattum open irukum:</p>
+      <div class="term">
+        <div class="term-head"><span>/etc/nginx/sites-available/xyz.com</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre>server {
+    listen 80;
+    server_name xyz.com www.xyz.com;
+
+    location / {
+        proxy_pass http://localhost:3000;     <span class="c1"># → frontend container</span>
+        proxy_set_header Host $host;
+    }
+
+    location /api/ {
+        proxy_pass http://localhost:5000;     <span class="c1"># → backend container</span>
+        proxy_set_header Host $host;
+    }
+}</pre>
+        <pre><span class="pr">$</span> sudo nginx -t && sudo systemctl reload nginx
+<span class="pr">$</span> sudo certbot --nginx -d xyz.com -d www.xyz.com</pre>
+      </div>
+
+      <table>
+        <tr><th>Layer</th><th>Public?</th><th>Reached via</th></tr>
+        <tr><td>Nginx</td><td>Yes — 443 only</td><td>https://xyz.com</td></tr>
+        <tr><td>Frontend container</td><td>No — internal port 3000</td><td>Nginx proxy_pass only</td></tr>
+        <tr><td>Backend container</td><td>No — internal port 5000</td><td>Nginx <code>/api/</code> route only</td></tr>
+        <tr><td>Database + Redis</td><td>No — Docker internal network</td><td>Backend container only, via service name</td></tr>
+      </table>
+
+      <div class="callout danger">
+        <span class="ctitle">Idhu thaan correct security pattern</span>
+        <p>Outside world ku ஒரே ஒரு door than open irukanum — Nginx oda port 443. Frontend, backend, database, redis — ellame VPS firewall layum, Docker network layum protect aagi, public ah directly reach panna mudiyathu. Idhu thaan "ஒரு door, pala rooms" architecture.</p>
+      </div>
+    </section>
+
+    <!-- 12 QUIZ -->
+    <section class="section" id="quiz">
+      <div class="sec-head"><span class="sec-num">12</span><h2>Knowledge Check</h2></div>
+      <p class="sec-kicker">Quick checks — no grading, just clarity.</p>
+
+      <div class="quiz" data-correct="1">
+        <p class="q">1. Why is an SSH key pair generally considered more secure than a password?</p>
+        <div class="opts">
+          <button class="opt" data-correct="false">It's shorter to type each time you log in</button>
+          <button class="opt" data-correct="true">The private key never leaves your machine and can't be brute-forced like a password</button>
+          <button class="opt" data-correct="false">It automatically encrypts files stored on the server</button>
+        </div>
+        <p class="explain">Right — the server only ever sees your public key. Without the matching private key, there's nothing to brute-force, unlike a password which can be guessed by automated bots.</p>
+      </div>
+
+      <div class="quiz" data-correct="1">
+        <p class="q">2. Why should Redis's port 6379 stay closed in the firewall?</p>
+        <div class="opts">
+          <button class="opt" data-correct="false">Redis doesn't use a network port at all</button>
+          <button class="opt" data-correct="true">By default Redis has no password, so exposing it publicly invites direct attacks</button>
+          <button class="opt" data-correct="false">Closing it makes Redis run faster</button>
+        </div>
+        <p class="explain">Correct — Redis is designed to be accessed by trusted local applications, not the open internet. It should bind to localhost and require a password as a backup layer.</p>
+      </div>
+
+      <div class="quiz" data-correct="2">
+        <p class="q">3. What does an SSL/TLS certificate actually guarantee?</p>
+        <div class="opts">
+          <button class="opt" data-correct="false">That the website's content is accurate and safe</button>
+          <button class="opt" data-correct="false">That the server has no security vulnerabilities</button>
+          <button class="opt" data-correct="true">That the connection is encrypted and the domain identity is verified</button>
+        </div>
+        <p class="explain">Exactly — TLS secures the data in transit and confirms you're talking to the real domain. It says nothing about the safety of the content itself.</p>
+      </div>
+    </section>
+
+    <!-- 13 CHEATSHEET -->
+    <section class="section" id="cheatsheet">
+      <div class="sec-head"><span class="sec-num">13</span><h2>Cheat Sheet</h2></div>
+      <p class="sec-kicker">Bookmark this. Every command from the masterclass, in order.</p>
+
+      <div class="term">
+        <div class="term-head"><span>full setup, start to finish</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="c1"># 1. update the system</span>
+<span class="pr">$</span> sudo apt update && sudo apt upgrade -y
+
+<span class="c1"># 2. create a sudo user</span>
+<span class="pr">$</span> adduser yourname && usermod -aG sudo yourname
+
+<span class="c1"># 3. set up SSH keys (run on your local machine)</span>
+<span class="pr">$</span> ssh-keygen -t ed25519 -C "you@example.com"
+<span class="pr">$</span> ssh-copy-id yourname@your_server_ip
+
+<span class="c1"># 4. lock down SSH (on the server, /etc/ssh/sshd_config)</span>
+<span class="pr">$</span> sudo systemctl restart ssh   <span class="c1"># after setting PasswordAuthentication no</span>
+
+<span class="c1"># 5. firewall</span>
+<span class="pr">$</span> sudo ufw allow OpenSSH && sudo ufw allow 80,443/tcp
+<span class="pr">$</span> sudo ufw enable
+
+<span class="c1"># 6. fail2ban</span>
+<span class="pr">$</span> sudo apt install fail2ban -y && sudo systemctl enable --now fail2ban
+
+<span class="c1"># 7. redis (bare-metal way)</span>
+<span class="pr">$</span> sudo apt install redis-server -y
+<span class="c1">#    edit /etc/redis/redis.conf -> bind 127.0.0.1, requirepass ...</span>
+<span class="pr">$</span> sudo systemctl restart redis-server
+
+<span class="c1"># 8. domain -> VPS (at your registrar's DNS panel)</span>
+<span class="c1">#    A record: @   -> your_server_ip</span>
+<span class="c1">#    A record: www -> your_server_ip</span>
+<span class="pr">$</span> nslookup yourdomain.com    <span class="c1"># confirm it resolves</span>
+
+<span class="c1"># 9. nginx + ssl</span>
+<span class="pr">$</span> sudo apt install nginx certbot python3-certbot-nginx -y
+<span class="pr">$</span> sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+
+<span class="c1"># 10. docker (the easy way to run everything)</span>
+<span class="pr">$</span> curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh
+<span class="pr">$</span> sudo usermod -aG docker $USER && newgrp docker
+
+<span class="c1"># 11. full stack with docker compose</span>
+<span class="pr">$</span> cd myapp && docker compose up -d --build
+<span class="pr">$</span> docker compose ps
+<span class="pr">$</span> docker compose logs -f backend</pre>
+      </div>
+
+      <h3>Docker quick reference</h3>
+      <div class="term">
+        <div class="term-head"><span>most-used docker commands</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> docker ps                      <span class="c1"># running containers</span>
+<span class="pr">$</span> docker ps -a                   <span class="c1"># all containers, including stopped</span>
+<span class="pr">$</span> docker images                  <span class="c1"># list local images</span>
+<span class="pr">$</span> docker logs -f &lt;name&gt;          <span class="c1"># follow logs</span>
+<span class="pr">$</span> docker exec -it &lt;name&gt; sh      <span class="c1"># shell inside a running container</span>
+<span class="pr">$</span> docker compose down            <span class="c1"># stop & remove all compose services</span>
+<span class="pr">$</span> docker compose up -d --build   <span class="c1"># rebuild & restart everything</span>
+<span class="pr">$</span> docker system prune -af        <span class="c1"># clean up unused images/containers</span></pre>
+      </div>
+    </section>
+
+
+    <!-- FINAL -->
+    <div class="final">
+      <div class="topline"></div>
+      <div class="eyebrow">module complete</div>
+      <h2>You can now stand up a real server.</h2>
+      <p>You know what a VPS is, how Linux and Ubuntu fit together, how to connect securely over SSH, how to lock the server down with a firewall and Fail2Ban, how to run Redis safely, and how to serve everything over HTTPS with a free certificate.</p>
+      <div class="badge-row">
+        <span class="badge">✓ VPS &amp; Linux</span>
+        <span class="badge">✓ SSH Keys</span>
+        <span class="badge">✓ UFW Firewall</span>
+        <span class="badge">✓ Redis</span>
+        <span class="badge">✓ SSL/TLS</span>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // ---- typing boot sequence ----
+  const bootLines = [
+    "$ whoami",
+    "guest — about to become root",
+    "$ uname -a",
+    "Linux ubuntu-vps 6.8.0 x86_64 GNU/Linux",
+    "$ echo 'ready to learn?'",
+    "ready to learn? → scroll down ▾"
+  ];
+  const bootEl = document.getElementById('bootTerm');
+  let li = 0, ci = 0;
+  function typeBoot(){
+    if(li >= bootLines.length){ 
+      const c = document.createElement('span'); c.className='caret';
+      bootEl.appendChild(c);
+      return; 
+    }
+    if(ci === 0){
+      const newLine = document.createElement('p');
+      newLine.className = 'line';
+      bootEl.appendChild(newLine);
+    }
+    const lineText = bootLines[li];
+    const p = bootEl.lastElementChild;
+    if(ci < lineText.length){
+      let isPrompt = lineText.startsWith('$');
+      p.innerHTML = (isPrompt ? '<span class="prompt">' + escapeHtml(lineText.slice(0,1)) + '</span>' + escapeHtml(lineText.slice(1,ci+1)) : escapeHtml(lineText.slice(0,ci+1)));
+      ci++;
+      setTimeout(typeBoot, lineText.startsWith('$') ? 35 : 14);
+    } else {
+      li++; ci = 0;
+      setTimeout(typeBoot, 260);
+    }
+  }
+  function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  setTimeout(typeBoot, 400);
+
+  // ---- copy buttons ----
+  function copyCode(btn){
+    const pre = btn.closest('.term').querySelector('pre');
+    const text = pre.innerText;
+    navigator.clipboard.writeText(text).then(()=>{
+      const old = btn.textContent;
+      btn.textContent = 'copied ✓';
+      btn.classList.add('copied');
+      setTimeout(()=>{ btn.textContent = old; btn.classList.remove('copied'); }, 1500);
+    }).catch(()=>{
+      btn.textContent = 'failed';
+      setTimeout(()=>{ btn.textContent = 'copy'; }, 1500);
+    });
+  }
+
+  // ---- checklist ----
+  function toggleCheck(box){
+    box.classList.toggle('done');
+    box.closest('li').classList.toggle('done');
+  }
+
+  // ---- quiz ----
+  document.querySelectorAll('.quiz').forEach(quiz=>{
+    const opts = quiz.querySelectorAll('.opt');
+    opts.forEach(opt=>{
+      opt.addEventListener('click', ()=>{
+        if(quiz.classList.contains('answered')) return;
+        quiz.classList.add('answered');
+        opts.forEach(o=>{
+          if(o.dataset.correct === 'true'){ o.classList.add('correct'); }
+          else if(o === opt){ o.classList.add('wrong'); }
+        });
+        quiz.querySelector('.explain').classList.add('show');
+      });
+    });
+  });
+
+  // ---- scroll spy + progress bar ----
+  const sections = document.querySelectorAll('main .section, main .hero');
+  const navLinks = document.querySelectorAll('.navlist a');
+  const sectionIds = ['intro','vps','linux','ubuntu','ssh','hardening','redis','ssl','stack','domain','docker','fullstack','quiz','cheatsheet'];
+
+  function onScroll(){
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = docHeight > 0 ? Math.min(100, (scrollTop/docHeight)*100) : 0;
+    document.getElementById('progressFill').style.width = pct + '%';
+
+    let current = sectionIds[0];
+    sectionIds.forEach(id=>{
+      const el = document.getElementById(id);
+      if(el){
+        const rect = el.getBoundingClientRect();
+        if(rect.top <= 140) current = id;
+      }
+    });
+    navLinks.forEach(a=>{
+      a.classList.toggle('active', a.getAttribute('href') === '#'+current);
+    });
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+</script>
+
+</body>
+</html>
