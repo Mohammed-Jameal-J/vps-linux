@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Production Deployment Masterclass — React + FastAPI + Postgres + Keycloak + Square</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Tamil:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #06100b;
+    --bg-soft: #0a1812;
+    --panel: #0d1f17;
+    --panel-2: #112a1f;
+    --line: #1d4231;
+    --green: #39ff8f;
+    --green-dim: #1f8a52;
+    --green-deep: #0e3322;
+    --white: #eef7f1;
+    --white-dim: #aac4b6;
+    --amber: #ffcf6b;
+    --red: #ff6b6b;
+    --blue: #6bb8ff;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', 'Noto Sans Tamil', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 0%, rgba(57,255,143,0.07), transparent 40%),
+      radial-gradient(circle at 90% 30%, rgba(57,255,143,0.05), transparent 45%);
+    color:var(--white);
+    font-family:var(--sans);
+    line-height:1.6;
+  }
+  a{color:var(--green);}
+  ::-webkit-scrollbar{width:10px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--green-deep);border-radius:6px;}
+
+  .shell{display:grid;grid-template-columns:280px 1fr;min-height:100vh;}
+  @media (max-width:900px){.shell{grid-template-columns:1fr;}}
+
+  /* mobile top bar — hidden on desktop */
+  .mobile-topbar{
+    display:none;
+    position:sticky;top:0;z-index:40;
+    align-items:center;justify-content:space-between;
+    background:var(--bg-soft);border-bottom:1px solid var(--line);
+    padding:14px 18px;
+  }
+  @media (max-width:900px){.mobile-topbar{display:flex;}}
+  .mobile-topbar .brand{margin-bottom:0;}
+  .menu-btn{
+    background:var(--panel);border:1px solid var(--line);color:var(--green);
+    width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;flex:none;
+  }
+  .menu-btn svg{width:18px;height:18px;}
+
+  .sidebar-overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:45;
+  }
+  .sidebar-overlay.show{display:block;}
+
+  .sidebar{
+    position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+    background:var(--bg-soft);border-right:1px solid var(--line);padding:24px 18px 40px;
+  }
+  @media (max-width:900px){
+    .sidebar{
+      position:fixed;top:0;left:0;height:100vh;width:280px;max-width:82vw;
+      z-index:50;border-right:1px solid var(--line);
+      transform:translateX(-100%);transition:transform .25s ease;
+      box-shadow:20px 0 40px -20px rgba(0,0,0,0.5);
+    }
+    .sidebar.open{transform:translateX(0);}
+  }
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);}
+  .brand span{font-family:var(--mono);font-weight:700;letter-spacing:0.5px;font-size:14px;color:var(--green);}
+  .sidebar .sub{font-family:var(--mono);font-size:11px;color:var(--white-dim);margin:0 0 22px;}
+  .progress-rail{height:2px;background:var(--line);border-radius:2px;margin-bottom:24px;overflow:hidden;}
+  .progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--green-dim),var(--green));transition:width .15s linear;}
+
+  .navlist{list-style:none;margin:0;padding:0;}
+  .navlist li{margin-bottom:2px;}
+  .navlist a{
+    display:flex;gap:10px;align-items:baseline;text-decoration:none;color:var(--white-dim);
+    font-size:13px;padding:7px 10px;border-radius:6px;border-left:2px solid transparent;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .navlist a .n{font-family:var(--mono);color:var(--green-dim);font-size:11px;min-width:22px;}
+  .navlist a:hover{background:var(--panel);color:var(--white);}
+  .navlist a.active{background:var(--panel-2);color:var(--green);border-left-color:var(--green);}
+  .navlist a.active .n{color:var(--green);}
+  .nav-divider{font-family:var(--mono);font-size:10px;color:var(--green-dim);text-transform:uppercase;letter-spacing:1.5px;margin:18px 0 6px 10px;opacity:0.7;}
+
+  main{padding:0;min-width:0;}
+  .section{padding:64px 56px;max-width:900px;border-bottom:1px solid var(--line);}
+  @media (max-width:700px){.section{padding:40px 22px;}}
+  @media (max-width:480px){.section{padding:32px 16px;}}
+  .section:last-of-type{border-bottom:none;}
+
+  .hero{padding:72px 56px 56px;max-width:1000px;position:relative;}
+  @media (max-width:700px){.hero{padding:36px 22px 32px;}}
+  @media (max-width:480px){.hero{padding:28px 16px 28px;}}
+  .hero-term{
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+    box-shadow:0 0 0 1px rgba(57,255,143,0.05), 0 30px 60px -30px rgba(0,0,0,0.6);margin-top:28px;
+  }
+  .term-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--panel-2);border-bottom:1px solid var(--line);}
+  .term-dot{width:10px;height:10px;border-radius:50%;}
+  .term-bar .t1{background:#ff5f56;}.term-bar .t2{background:#ffbd2e;}.term-bar .t3{background:#27c93f;}
+  .term-title{margin-left:8px;font-family:var(--mono);font-size:12px;color:var(--white-dim);}
+  .term-body{font-family:var(--mono);font-size:13.5px;padding:20px 22px;color:var(--white-dim);min-height:170px;}
+  .term-body .line{margin:0 0 6px;white-space:pre-wrap;}
+  .term-body .prompt{color:var(--green);}
+  .caret{display:inline-block;width:8px;height:15px;background:var(--green);vertical-align:-2px;animation:blink 1s step-start infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  .eyebrow{font-family:var(--mono);color:var(--green);font-size:12.5px;letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+  .eyebrow::before{content:'';width:18px;height:1px;background:var(--green-dim);}
+  h1.title{font-family:var(--sans);font-weight:800;font-size:clamp(28px,7vw,50px);line-height:1.1;margin:0 0 16px;letter-spacing:-0.5px;}
+  h1.title .accent{color:var(--green);}
+  .lede{color:var(--white-dim);font-size:16px;max-width:660px;margin:0 0 8px;}
+  @media (max-width:480px){.lede{font-size:14.5px;}}
+  .stack-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px;}
+  .pill{font-family:var(--mono);font-size:11.5px;color:var(--green);border:1px solid var(--green-dim);padding:5px 11px;border-radius:20px;background:var(--panel);}
+
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px;flex-wrap:wrap;}
+  .sec-num{font-family:var(--mono);color:var(--green-dim);font-size:14px;}
+  h2{font-size:clamp(21px,5vw,30px);margin:0;letter-spacing:-0.3px;}
+  .sec-kicker{color:var(--white-dim);font-size:14.5px;margin:8px 0 26px;max-width:700px;}
+  @media (max-width:480px){.sec-kicker{font-size:13.5px;}}
+
+  p{color:var(--white-dim);font-size:15.5px;}
+  strong{color:var(--white);}
+  h3{font-size:18px;margin:30px 0 10px;color:var(--white);}
+  ul,ol{color:var(--white-dim);font-size:15.5px;padding-left:20px;}
+  li{margin-bottom:6px;}
+  li::marker{color:var(--green-dim);}
+
+  .term{background:var(--bg-soft);border:1px solid var(--line);border-radius:8px;margin:18px 0;overflow:hidden;position:relative;}
+  .term-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px;background:var(--panel-2);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11.5px;color:var(--white-dim);}
+  .term-head span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .copy-btn{background:transparent;border:1px solid var(--line);color:var(--white-dim);font-family:var(--mono);font-size:11px;padding:4px 9px;border-radius:5px;cursor:pointer;transition:all .15s;flex:none;}
+  .copy-btn:hover{border-color:var(--green-dim);color:var(--green);}
+  .copy-btn.copied{border-color:var(--green);color:var(--green);}
+  pre{margin:0;padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:13px;line-height:1.65;color:var(--white);-webkit-overflow-scrolling:touch;}
+  @media (max-width:480px){pre{font-size:12px;padding:14px 14px;}.term-head{font-size:10.5px;padding:7px 10px;}}
+  pre .c1{color:var(--white-dim);}
+  pre .pr{color:var(--green);}
+  pre .out{color:var(--white-dim);}
+  pre .kw{color:var(--blue);}
+
+  .callout{border-left:3px solid var(--green-dim);background:var(--panel);padding:14px 18px;border-radius:0 8px 8px 0;margin:18px 0;font-size:14.5px;}
+  .callout.warn{border-left-color:var(--amber);}
+  .callout.warn .ctitle{color:var(--amber);}
+  .callout.danger{border-left-color:var(--red);}
+  .callout.danger .ctitle{color:var(--red);}
+  .callout .ctitle{font-family:var(--mono);color:var(--green);font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;display:block;}
+  .callout p{margin:0;color:var(--white-dim);font-size:14.5px;}
+
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:24px 0;}
+  @media (max-width:640px){.grid{grid-template-columns:1fr;}}
+  .grid.tri{grid-template-columns:repeat(3,1fr);}
+  @media (max-width:760px){.grid.tri{grid-template-columns:1fr;}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;transition:border-color .15s, transform .15s;}
+  .card:hover{border-color:var(--green-dim);transform:translateY(-2px);}
+  .card .ic{font-family:var(--mono);color:var(--green);font-size:20px;margin-bottom:8px;display:block;}
+  .card h4{margin:0 0 6px;font-size:15px;color:var(--white);}
+  .card p{margin:0;font-size:13.5px;color:var(--white-dim);}
+
+  .table-wrap{overflow-x:auto;margin:18px 0;-webkit-overflow-scrolling:touch;}
+  .table-wrap table{margin:0;min-width:460px;}
+  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14px;}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;}
+  th{font-family:var(--mono);color:var(--green);font-size:12px;text-transform:uppercase;letter-spacing:0.5px;}
+  td{color:var(--white-dim);}
+  td code, li code, p code{color:var(--green);background:var(--panel-2);padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:13px;white-space:normal;}
+  @media (max-width:480px){th,td{padding:8px 10px;font-size:12.5px;}}
+
+  .checklist{list-style:none;padding:0;margin:18px 0;}
+  .checklist li{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line);font-size:14.5px;color:var(--white-dim);}
+  .checklist li:last-child{border-bottom:none;}
+  .checklist .box{flex:none;width:18px;height:18px;border:1.5px solid var(--green-dim);border-radius:4px;margin-top:2px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
+  .checklist .box.done{background:var(--green);border-color:var(--green);}
+  .checklist .box.done::after{content:'✓';color:var(--bg);font-size:12px;font-weight:700;}
+  .checklist li.done span.label{color:var(--white-dim);text-decoration:line-through;opacity:.6;}
+
+  .diagram{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:28px 0;flex-wrap:wrap;}
+  .diagram .box{flex:1;min-width:140px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center;}
+  .diagram .box.you{border-color:var(--green-dim);}
+  .diagram .box .lbl{font-family:var(--mono);color:var(--green);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+  .diagram .box .desc{font-size:12.5px;color:var(--white-dim);}
+  .diagram .arrow{font-family:var(--mono);color:var(--green-dim);font-size:20px;flex:none;}
+  @media (max-width:640px){
+    .diagram{flex-direction:column;align-items:stretch;}
+    .diagram .box{min-width:0;width:100%;}
+    .diagram .arrow{transform:rotate(90deg);align-self:center;}
+  }
+
+  .chip{display:inline-block;background:var(--panel-2);border:1px solid var(--line);color:var(--green);font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:5px;}
+
+  .final{padding:64px 56px 90px;max-width:900px;}
+  .badge-row{display:flex;gap:14px;flex-wrap:wrap;margin-top:24px;}
+  .badge{font-family:var(--mono);font-size:12px;color:var(--green);border:1px solid var(--green-dim);padding:6px 12px;border-radius:20px;background:var(--panel);}
+  .topline{height:1px;background:linear-gradient(90deg,transparent,var(--green-dim),transparent);margin:0 0 64px;}
+</style>
+</head>
+<body>
+
+<div class="mobile-topbar">
+  <div class="brand"><span class="dot"></span><span>root@production</span></div>
+  <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="shell">
+  <nav class="sidebar" id="sidebar">
+    <div class="brand"><span class="dot"></span><span>root@production</span></div>
+    <p class="sub">// React + FastAPI + Postgres + Keycloak + Square</p>
+    <div class="progress-rail"><div class="progress-fill" id="progressFill"></div></div>
+    <ul class="navlist" id="navlist">
+      <li><a href="#intro"><span class="n">00</span>Overview</a></li>
+      <li><a href="#architecture"><span class="n">01</span>Architecture</a></li>
+      <li><a href="#vpssetup"><span class="n">02</span>VPS Hardening Recap</a></li>
+      <li><a href="#dockerinstall"><span class="n">03</span>Docker on the VPS</a></li>
+      <li><a href="#backend"><span class="n">04</span>Dockerize FastAPI</a></li>
+      <li><a href="#frontend"><span class="n">05</span>Dockerize React</a></li>
+      <li><a href="#postgres"><span class="n">06</span>PostgreSQL in Docker</a></li>
+      <li><a href="#compose"><span class="n">07</span>Docker Compose: Wiring It</a></li>
+      <li><a href="#domainssl"><span class="n">08</span>Domain, Nginx &amp; SSL</a></li>
+      <li><a href="#keycloak"><span class="n">09</span>Keycloak — Concept &amp; Setup</a></li>
+      <li><a href="#authflow"><span class="n">10</span>FastAPI + React Auth</a></li>
+      <li><a href="#square"><span class="n">11</span>Square — Concept &amp; Setup</a></li>
+      <li><a href="#checkout"><span class="n">12</span>Square Checkout Flow</a></li>
+      <li><a href="#webhooks"><span class="n">13</span>Square Webhooks</a></li>
+      <li><a href="#hardening"><span class="n">14</span>Security &amp; Maintenance</a></li>
+    </ul>
+  </nav>
+
+  <main>
+
+    <!-- HERO -->
+    <section class="hero" id="intro">
+      <div class="eyebrow">production masterclass · 00 of 14</div>
+      <h1 class="title">Unga VPS already irukku.<br><span class="accent">Ippo real app ah deploy pannalam.</span></h1>
+      <p class="lede">React frontend, FastAPI backend, PostgreSQL database — ellame Docker la pack panni, unga VPS la run pannalam. Plus Keycloak auth, Square payments, full production security. Idhu beginner guide alla — idhu real project deploy panna step-by-step plan.</p>
+      <div class="stack-pills">
+        <span class="pill">React</span><span class="pill">FastAPI</span><span class="pill">PostgreSQL</span>
+        <span class="pill">Docker</span><span class="pill">Nginx</span><span class="pill">Keycloak</span><span class="pill">Square</span>
+      </div>
+
+      <div class="hero-term">
+        <div class="term-bar">
+          <span class="term-dot t1"></span><span class="term-dot t2"></span><span class="term-dot t3"></span>
+          <span class="term-title">you@vps — bash</span>
+        </div>
+        <div class="term-body" id="bootTerm">
+          <p class="line"><span class="prompt">$</span> docker compose ps</p>
+        </div>
+      </div>
+      <a href="#architecture" style="font-family:var(--mono);font-size:12px;color:var(--green-dim);text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-top:36px;">↓ start with the architecture</a>
+    </section>
+
+    <!-- 01 ARCHITECTURE -->
+    <section class="section" id="architecture">
+      <div class="sec-head"><span class="sec-num">01</span><h2>Architecture Overview</h2></div>
+      <p class="sec-kicker">Build pannuvadhuku munnadi, full picture ah paarunga — ellame eppadi connect aagum nu.</p>
+
+      <p>Idhu ஒரு real production system — 7 moving pieces ஒரே VPS la run aagும். Ovvoru piece um specific job pannum, and ellame ஒரு secure path la mattum communicate pannum:</p>
+
+      <div class="diagram" style="flex-wrap:wrap;">
+        <div class="box"><div class="lbl">User Browser</div><div class="desc">xyz.com</div></div>
+        <div class="arrow">→</div>
+        <div class="box you"><div class="lbl">Nginx</div><div class="desc">Reverse proxy + SSL (only public door)</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">React Frontend</div><div class="desc">Static build, served as container</div></div>
+      </div>
+      <div class="diagram" style="flex-wrap:wrap;">
+        <div class="box"><div class="lbl">React</div><div class="desc">calls /api/...</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">FastAPI Backend</div><div class="desc">Business logic, validates JWT</div></div>
+        <div class="arrow">→</div>
+        <div class="box you"><div class="lbl">PostgreSQL</div><div class="desc">Internal network only</div></div>
+      </div>
+      <div class="diagram" style="flex-wrap:wrap;">
+        <div class="box"><div class="lbl">FastAPI</div><div class="desc">validates token with</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">Keycloak</div><div class="desc">Auth server (login, JWT issuing)</div></div>
+      </div>
+      <div class="diagram" style="flex-wrap:wrap;">
+        <div class="box"><div class="lbl">FastAPI</div><div class="desc">creates payment via</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">Square API</div><div class="desc">Processes card payment (external)</div></div>
+        <div class="arrow">→</div>
+        <div class="box you"><div class="lbl">Webhook → FastAPI</div><div class="desc">Confirms payment result</div></div>
+      </div>
+
+      <h3>Ovvoru piece um enna pannudhu</h3>
+      <div class="grid">
+        <div class="card"><span class="ic">▣</span><h4>React (frontend)</h4><p>User UI — login button, product list, checkout form. Browser la run aagudhu.</p></div>
+        <div class="card"><span class="ic">⌘</span><h4>FastAPI (backend)</h4><p>Python API — business logic, database queries, payment creation, token verification.</p></div>
+        <div class="card"><span class="ic">⛁</span><h4>PostgreSQL (database)</h4><p>Users, orders, products — permanent data storage. Backend mattum access pannum.</p></div>
+        <div class="card"><span class="ic">⛨</span><h4>Keycloak (auth)</h4><p>Login/signup/password reset ah handle pannum separate service — "who is this user" ku answer.</p></div>
+        <div class="card"><span class="ic">⎘</span><h4>Square (payments)</h4><p>Card details ah neenga touch pannama, secure ah payment process pannum third-party service.</p></div>
+        <div class="card"><span class="ic">⇄</span><h4>Nginx (gatekeeper)</h4><p>Outside world ku ஒரே ஒரு entry point — SSL terminate pannitu, correct container ku route pannum.</p></div>
+      </div>
+
+      <div class="callout">
+        <span class="ctitle">Why separate pieces?</span>
+        <p>Each service ஒரு specific job pannum, and replace panna easy. Naalaikku neenga Stripe ku switch aaganum nu vechukalam — Square piece ah mattum maathinalum podhum, FastAPI/React/Postgres touch pannama. Idhu thaan "loosely coupled" architecture oda benefit.</p>
+      </div>
+    </section>
+
+    <!-- 02 VPS HARDENING RECAP -->
+    <section class="section" id="vpssetup">
+      <div class="sec-head"><span class="sec-num">02</span><h2>VPS Hardening — Quick Recap</h2></div>
+      <p class="sec-kicker">Unga VPS already purchased pannirukinga — idhu first 5 minutes la pannanum.</p>
+
+      <p>Idhu production system nu vechukinaal, namma andha basic security steps ah skip panna mudiyathu. Brief recap — full explanation venum na earlier beginner masterclass paarunga, but commands here irukku:</p>
+
+      <div class="term">
+        <div class="term-head"><span>first 10 minutes on a fresh VPS</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="c1"># 1. update everything</span>
+<span class="pr">$</span> sudo apt update && sudo apt upgrade -y
+
+<span class="c1"># 2. create a non-root sudo user (never run production as root)</span>
+<span class="pr">$</span> adduser deploy
+<span class="pr">$</span> usermod -aG sudo deploy
+
+<span class="c1"># 3. set up SSH key auth from your local machine</span>
+<span class="pr">$</span> ssh-copy-id deploy@your_server_ip
+
+<span class="c1"># 4. disable password login + root login</span>
+<span class="pr">$</span> sudo nano /etc/ssh/sshd_config
+<span class="c1">#    PasswordAuthentication no</span>
+<span class="c1">#    PermitRootLogin no</span>
+<span class="pr">$</span> sudo systemctl restart ssh
+
+<span class="c1"># 5. firewall — only what's needed</span>
+<span class="pr">$</span> sudo ufw default deny incoming
+<span class="pr">$</span> sudo ufw allow OpenSSH
+<span class="pr">$</span> sudo ufw allow 80,443/tcp
+<span class="pr">$</span> sudo ufw enable
+
+<span class="c1"># 6. brute-force protection</span>
+<span class="pr">$</span> sudo apt install fail2ban -y
+<span class="pr">$</span> sudo systemctl enable --now fail2ban</pre>
+      </div>
+
+      <div class="callout warn">
+        <span class="ctitle">Idhu skip pannaadheenga</span>
+        <p>Production la real user data, payment info irukum — idhu test server alla. Andha 6 steps ah skip pannina, unga server first 24 hours kulla bots scan panni attack panna try pannum. 10 minutes investment, worth it.</p>
+      </div>
+
+      <div class="checklist">
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">Non-root sudo user created, root SSH login disabled</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">SSH key auth working, password auth disabled</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">UFW enabled — only 22, 80, 443 open</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">Fail2Ban running and watching SSH</span></li>
+      </div>
+    </section>
+
+    <!-- 03 DOCKER INSTALL -->
+    <section class="section" id="dockerinstall">
+      <div class="sec-head"><span class="sec-num">03</span><h2>Docker &amp; Docker Compose on the VPS</h2></div>
+      <p class="sec-kicker">Everything below idhu ஒரு foundation mela than build aagum.</p>
+
+      <p>Idhu whole project — React, FastAPI, Postgres, Keycloak — ellame Docker containers ah than run aagum. So first step, VPS la Docker correct ah install pannanum.</p>
+
+      <div class="term">
+        <div class="term-head"><span>install docker engine + compose plugin</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> curl -fsSL https://get.docker.com -o get-docker.sh
+<span class="pr">$</span> sudo sh get-docker.sh
+<span class="pr">$</span> sudo usermod -aG docker $USER    <span class="c1"># sudo illama docker commands run panna</span>
+<span class="pr">$</span> newgrp docker
+
+<span class="pr">$</span> docker --version
+<span class="out">Docker version 27.x.x</span>
+<span class="pr">$</span> docker compose version
+<span class="out">Docker Compose version v2.x.x</span></pre>
+      </div>
+
+      <h3>Project folder structure plan pannunga</h3>
+      <p>Idhu thaan namma whole project ku base layout — next modules la ovvoru folder ah build pannுவோம்:</p>
+      <div class="term">
+        <div class="term-head"><span>project layout</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre>myproject/
+├── frontend/              <span class="c1"># React app</span>
+│   ├── Dockerfile
+│   └── src/...
+├── backend/                <span class="c1"># FastAPI app</span>
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   └── app/...
+├── nginx/
+│   └── default.conf
+├── .env                     <span class="c1"># secrets — never commit this</span>
+├── .gitignore
+└── docker-compose.yml       <span class="c1"># wires everything together</span></pre>
+      </div>
+
+      <div class="callout">
+        <span class="ctitle">.env file = where secrets live</span>
+        <p>Database passwords, Square API keys, Keycloak secrets — ellame <code>.env</code> file la than store pannுவோம், code la hardcode pannamaatta. Idha <code>.gitignore</code> la add pannina, accidentally GitHub ku push aagathu.</p>
+      </div>
+    </section>
+
+    <!-- 04 BACKEND -->
+    <section class="section" id="backend">
+      <div class="sec-head"><span class="sec-num">04</span><h2>Dockerizing the FastAPI Backend</h2></div>
+      <p class="sec-kicker">Python API ah ஒரு portable container ah convert pannunga.</p>
+
+      <p>FastAPI project ku ஒரு basic structure assume pannுகிறோம் — <code>requirements.txt</code> and <code>app/main.py</code> irukum nu. Indha Dockerfile, dependencies install pannitu, production-grade server (<code>uvicorn</code>) la run pannும்:</p>
+
+      <div class="term">
+        <div class="term-head"><span>backend/requirements.txt</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre>fastapi==0.115.0
+uvicorn[standard]==0.32.0
+sqlalchemy==2.0.35
+asyncpg==0.30.0
+python-jose[cryptography]==3.3.0
+httpx==0.27.2
+pydantic-settings==2.6.0</pre>
+      </div>
+
+      <div class="term">
+        <div class="term-head"><span>backend/Dockerfile</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="c1"># lightweight Python base image</span>
+<span class="kw">FROM</span> python:3.12-slim
+
+<span class="kw">WORKDIR</span> /app
+
+<span class="c1"># system deps needed for asyncpg / cryptography</span>
+<span class="kw">RUN</span> apt-get update && apt-get install -y gcc libpq-dev && rm -rf /var/lib/apt/lists/*
+
+<span class="c1"># install python deps first — better layer caching</span>
+<span class="kw">COPY</span> requirements.txt .
+<span class="kw">RUN</span> pip install --no-cache-dir -r requirements.txt
+
+<span class="c1"># copy the rest of the app</span>
+<span class="kw">COPY</span> . .
+
+<span class="kw">EXPOSE</span> 8000
+
+<span class="c1"># production server — multiple workers, no --reload</span>
+<span class="kw">CMD</span> ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]</pre>
+      </div>
+
+      <h3>Quick standalone test (before wiring into compose)</h3>
+      <div class="term">
+        <div class="term-head"><span>build &amp; test the backend alone</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> cd backend
+<span class="pr">$</span> docker build -t myapp-backend .
+<span class="pr">$</span> docker run -d -p 8000:8000 myapp-backend
+<span class="pr">$</span> curl http://localhost:8000/docs
+<span class="out">&lt;!-- FastAPI's Swagger UI HTML --&gt;</span></pre>
+      </div>
+
+      <div class="callout warn">
+        <span class="ctitle">--reload production la use pannaadheenga</span>
+        <p><code>uvicorn --reload</code> development ku mattum — file watching overhead irukum, and production la unnecessary memory use pannum. Andha <code>--workers</code> flag mattum use pannunga, real traffic handle panna.</p>
+      </div>
+    </section>
+
+    <!-- 05 FRONTEND -->
+    <section class="section" id="frontend">
+      <div class="sec-head"><span class="sec-num">05</span><h2>Dockerizing the React Frontend</h2></div>
+      <p class="sec-kicker">React app ah build panni, static files ah Nginx la serve pannுவோம்.</p>
+
+      <p>React app ஒரு running server illa production la — adhu just static HTML/CSS/JS files ah build aagum (<code>npm run build</code>), apram edhuvum web server (Nginx) andha files ah serve pannum. Idhuku <strong>multi-stage Docker build</strong> use pannுவோம் — build pannற stage and serve pannற stage ah separate ah vechukalam, final image size small ah irukும்.</p>
+
+      <div class="term">
+        <div class="term-head"><span>frontend/Dockerfile</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="c1"># ---- stage 1: build the React app ----</span>
+<span class="kw">FROM</span> node:20-alpine <span class="kw">AS</span> build
+<span class="kw">WORKDIR</span> /app
+<span class="kw">COPY</span> package*.json ./
+<span class="kw">RUN</span> npm install
+<span class="kw">COPY</span> . .
+<span class="kw">RUN</span> npm run build
+
+<span class="c1"># ---- stage 2: serve with nginx ----</span>
+<span class="kw">FROM</span> nginx:alpine
+<span class="kw">COPY</span> --from=build /app/build /usr/share/nginx/html
+<span class="kw">COPY</span> nginx.conf /etc/nginx/conf.d/default.conf
+<span class="kw">EXPOSE</span> 80
+<span class="kw">CMD</span> ["nginx", "-g", "daemon off;"]</pre>
+      </div>
+
+      <div class="term">
+        <div class="term-head"><span>frontend/nginx.conf — handles React Router</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre>server {
+    listen 80;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    <span class="c1">/* React Router uses client-side routes —
+       this line redirects every unknown path back to index.html */</span>
+    location / {
+        try_files $uri /index.html;
+    }
+}</pre>
+      </div>
+
+      <div class="callout">
+        <span class="ctitle">Why multi-stage build matters</span>
+        <p>Stage 1 la Node.js + npm packages — idhu 1GB+ aagalam. But final image la stage 2 mattum than ship aagும் — andha nginx:alpine + built static files மட்டும். Final image, megabytes la than irukும், gigabytes la illa.</p>
+      </div>
+
+      <h3>Environment-aware API URL</h3>
+      <p>React app ku, backend எங்க irukum nu sollanum. Build time la ஒரு environment variable pass pannுவோம்:</p>
+      <div class="term">
+        <div class="term-head"><span>frontend/.env.production</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre>REACT_APP_API_URL=https://xyz.com/api
+REACT_APP_KEYCLOAK_URL=https://xyz.com/auth</pre>
+      </div>
+    </section>
+
+    <!-- 06 POSTGRES -->
+    <section class="section" id="postgres">
+      <div class="sec-head"><span class="sec-num">06</span><h2>PostgreSQL in Docker</h2></div>
+      <p class="sec-kicker">Data permanent ah store panna, correct volume setup romba important.</p>
+
+      <p>Postgres ku custom Dockerfile thevai illa — official <code>postgres</code> image direct use pannலாம். But ஒரு critical thing: containers <strong>disposable</strong> — restart pannina, recreate pannina, data poaidum, <strong>unless</strong> neenga ஒரு <strong>volume</strong> mount pannina. Volume na, data ah container vெளியே, VPS oda real disk la store pannுவது.</p>
+
+      <div class="diagram">
+        <div class="box"><div class="lbl">Postgres Container</div><div class="desc">Restartable, replaceable</div></div>
+        <div class="arrow">→</div>
+        <div class="box you"><div class="lbl">Docker Volume</div><div class="desc">Lives on VPS disk — survives restarts</div></div>
+      </div>
+
+      <h3>Connecting from FastAPI (SQLAlchemy + asyncpg)</h3>
+      <div class="term">
+        <div class="term-head"><span>backend/app/database.py</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="kw">from</span> sqlalchemy.ext.asyncio <span class="kw">import</span> create_async_engine, AsyncSession
+<span class="kw">from</span> sqlalchemy.orm <span class="kw">import</span> sessionmaker
+<span class="kw">import</span> os
+
+<span class="c1"># note the hostname: "db" — that's the docker-compose service name,
+# not "localhost" — Docker's internal DNS resolves it</span>
+DATABASE_URL = os.environ.get("DATABASE_URL")
+<span class="c1"># postgresql+asyncpg://appuser:secretpass@db:5432/appdb</span>
+
+engine = create_async_engine(DATABASE_URL, echo=<span class="kw">False</span>)
+AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=<span class="kw">False</span>)
+
+<span class="kw">async def</span> get_db():
+    <span class="kw">async with</span> AsyncSessionLocal() <span class="kw">as</span> session:
+        <span class="kw">yield</span> session</pre>
+      </div>
+
+      <h3>Database migrations (Alembic)</h3>
+      <p>Schema changes ah track panna, <code>alembic</code> use pannுவோம் — idhu Git mathiri, but database structure ku:</p>
+      <div class="term">
+        <div class="term-head"><span>running migrations</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> docker compose exec backend alembic revision --autogenerate -m "create users table"
+<span class="pr">$</span> docker compose exec backend alembic upgrade head</pre>
+      </div>
+
+      <h3>Daily backups — non-negotiable</h3>
+      <div class="term">
+        <div class="term-head"><span>backup script (cron job)</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="c1">#!/bin/bash
+# /home/deploy/backup-db.sh</span>
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+docker compose exec -T db pg_dump -U appuser appdb | gzip > /home/deploy/backups/appdb_$TIMESTAMP.sql.gz
+
+<span class="c1"># keep only last 7 days</span>
+find /home/deploy/backups -name "*.sql.gz" -mtime +7 -delete</pre>
+        <pre><span class="pr">$</span> chmod +x backup-db.sh
+<span class="pr">$</span> crontab -e
+<span class="c1"># add this line — runs daily at 2 AM</span>
+0 2 * * * /home/deploy/backup-db.sh</pre>
+      </div>
+
+      <div class="callout danger">
+        <span class="ctitle">Volume illama production la postgres run pannaadheenga</span>
+        <p>Volume mount pannama Postgres run pannina, container accidentally delete aana (update, crash, redeploy edhuvum) — entire database poaidum. Idhu single most common production data-loss mistake.</p>
+      </div>
+    </section>
+
+    <!-- 07 COMPOSE -->
+    <section class="section" id="compose">
+      <div class="sec-head"><span class="sec-num">07</span><h2>Docker Compose: Wiring It All Together</h2></div>
+      <p class="sec-kicker">Ellame ஒரே file la — ஒரு command la start aagum.</p>
+
+      <p>Ippo ella pieces um (frontend, backend, db) ready. Idha ஒரே <code>docker-compose.yml</code> la combine pannுவோம். Keycloak ah next modules la add pannுவோம் — base structure ah ippo build pannலாம்:</p>
+
+      <div class="term">
+        <div class="term-head"><span>docker-compose.yml</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre>version: "3.9"
+
+services:
+  frontend:
+    build: ./frontend
+    restart: always
+    expose:
+      - "80"
+    <span class="c1"># note: no "ports" here — Nginx (host) will reach it
+    # via the internal docker network, not the public internet</span>
+
+  backend:
+    build: ./backend
+    restart: always
+    expose:
+      - "8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    <span class="c1"># no "ports" or "expose" to the host — backend reaches it
+    # over the internal compose network only</span>
+
+volumes:
+  pgdata:</pre>
+      </div>
+
+      <div class="term">
+        <div class="term-head"><span>.env (never commit this file)</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre>DB_USER=appuser
+DB_PASSWORD=use_a_long_random_string_here
+DB_NAME=appdb</pre>
+      </div>
+
+      <div class="term">
+        <div class="term-head"><span>start everything</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> docker compose up -d --build
+<span class="out">[+] Running 3/3
+ ✔ Container myproject-db-1        Started
+ ✔ Container myproject-backend-1   Started
+ ✔ Container myproject-frontend-1  Started</span>
+
+<span class="pr">$</span> docker compose ps
+<span class="pr">$</span> docker compose logs -f backend</pre>
+      </div>
+
+      <div class="callout">
+        <span class="ctitle">Key idea — "expose" vs "ports"</span>
+        <p><code>ports</code> na, VPS oda outside world ku andha port open aagும். <code>expose</code> na, andha port internal docker network ku mattum visible — outside ku illa. Frontend, backend, db — moonum <code>expose</code> mattum use pannுகிறோம், ports illa. Outside world ku Nginx mattum visible irukும் — next module la paakலாம்.</p>
+      </div>
+    </section>
+
+    <!-- 08 DOMAIN/SSL -->
+    <section class="section" id="domainssl">
+      <div class="sec-head"><span class="sec-num">08</span><h2>Domain, Nginx Reverse Proxy &amp; SSL</h2></div>
+      <p class="sec-kicker">Ippo VPS la host la (container kulla illa) Nginx vechu, ellame route pannுவோம்.</p>
+
+      <p>Module 07 la frontend/backend containers <code>expose</code> pannom — outside world ku visible illa. Ippo VPS la directly (host machine la) Nginx install pannி, andha rendu containers ku internally route pannுவோம். Idhu thaan single public entry point.</p>
+
+      <h3>Step 1 — Domain A record point pannunga</h3>
+<div class="table-wrap">
+      <table>
+        <tr><th>Type</th><th>Host</th><th>Value</th></tr>
+        <tr><td>A</td><td>@</td><td>your_server_ip</td></tr>
+        <tr><td>A</td><td>www</td><td>your_server_ip</td></tr>
+      </table>
+      </div>
+      <div class="term">
+        <div class="term-head"><span>confirm propagation</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> nslookup xyz.com
+<span class="out">Address: your_server_ip   ← match aagi irukanum</span></pre>
+      </div>
+
+      <h3>Step 2 — Nginx install pannunga host machine la</h3>
+      <div class="term">
+        <div class="term-head"><span>install nginx + certbot</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> sudo apt install nginx certbot python3-certbot-nginx -y
+<span class="pr">$</span> sudo systemctl enable --now nginx</pre>
+      </div>
+
+      <h3>Step 3 — Route panna config pannunga</h3>
+      <p>Idhu thaan key file — frontend/backend containers, expose pannina ports ku (host la, idhu localhost ports ah than show aagும், compose internal network irundhalum) route pannுவோம்:</p>
+      <div class="term">
+        <div class="term-head"><span>/etc/nginx/sites-available/xyz.com</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre>server {
+    listen 80;
+    server_name xyz.com www.xyz.com;
+
+    <span class="c1"># everything except /api goes to React</span>
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    <span class="c1"># /api goes to FastAPI backend</span>
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    <span class="c1"># /auth goes to Keycloak (set up in next module)</span>
+    location /auth/ {
+        proxy_pass http://127.0.0.1:8080/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}</pre>
+        <pre><span class="pr">$</span> sudo ln -s /etc/nginx/sites-available/xyz.com /etc/nginx/sites-enabled/
+<span class="pr">$</span> sudo nginx -t && sudo systemctl reload nginx</pre>
+      </div>
+
+      <div class="callout warn">
+        <span class="ctitle">expose vs published ports — correction</span>
+        <p>Host Nginx, container ah <code>127.0.0.1:PORT</code> nu reach panna, andha compose service ku <code>ports: ["3000:80"]</code> mathiri ஒரு <strong>published port</strong> venum (only bound to 127.0.0.1, public ah illa) — pure <code>expose</code> mattum host machine ku reachable aagathu, container-to-container ku mattum. Compose file update pannunga: <code>ports: ["127.0.0.1:3000:80"]</code> frontend ku, <code>["127.0.0.1:8000:8000"]</code> backend ku. Idhu, VPS firewall (UFW) andha ports ah outside ku block pannирுக்கும்போது, Nginx mattum localhost via reach pannும்.</p>
+      </div>
+
+      <h3>Step 4 — SSL certificate (free, via Let's Encrypt)</h3>
+      <div class="term">
+        <div class="term-head"><span>certbot</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> sudo certbot --nginx -d xyz.com -d www.xyz.com
+<span class="out">Congratulations! You have successfully enabled HTTPS on
+https://xyz.com and https://www.xyz.com</span>
+
+<span class="c1"># auto-renewal check</span>
+<span class="pr">$</span> sudo certbot renew --dry-run</pre>
+      </div>
+
+<div class="table-wrap">
+      <table>
+        <tr><th>Layer</th><th>Public?</th></tr>
+        <tr><td>Nginx (host)</td><td>Yes — port 443 only</td></tr>
+        <tr><td>React, FastAPI, Keycloak containers</td><td>No — bound to 127.0.0.1, UFW blocks external access</td></tr>
+        <tr><td>Postgres container</td><td>No — Docker internal network only, no host port at all</td></tr>
+      </table>
+      </div>
+    </section>
+
+    <!-- 09 KEYCLOAK -->
+    <section class="section" id="keycloak">
+      <div class="sec-head"><span class="sec-num">09</span><h2>Keycloak — Concept &amp; Self-Hosted Setup</h2></div>
+      <p class="sec-kicker">Login/signup ah neenga build pannாம, Keycloak ah handle panna vidунगा.</p>
+
+      <h3>Keycloak enna pannудhu (concept)</h3>
+      <p><strong>Keycloak</strong> ஒரு open-source <strong>Identity and Access Management (IAM)</strong> server. Idhu enna pannудhu na — login pages, password storage, password reset, multi-factor auth, social login (Google/GitHub) — ellame Keycloak handle pannидும், neenga andha logic ah FastAPI/React la build panna vendiyadhu illa.</p>
+
+      <div class="grid">
+        <div class="card"><span class="ic">⛨</span><h4>Realm</h4><p>Unga app ku ஒரு isolated space — users, roles, clients ellam ஒரு realm kulla irukும்.</p></div>
+        <div class="card"><span class="ic">⌘</span><h4>Client</h4><p>Unga React app / FastAPI backend — Keycloak kitta "register" aana application.</p></div>
+        <div class="card"><span class="ic">▣</span><h4>User</h4><p>Login pannற real person — Keycloak la than store aagும், unga database la illa.</p></div>
+        <div class="card"><span class="ic">⎘</span><h4>JWT Token</h4><p>Login success aana pinnadi Keycloak kudukற "proof" — idha backend verify pannும்.</p></div>
+      </div>
+
+      <h3>Eppadi flow work aagும் (OIDC — OpenID Connect)</h3>
+      <div class="diagram" style="flex-wrap:wrap;">
+        <div class="box"><div class="lbl">1. User</div><div class="desc">Clicks "Login" on React</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">2. Redirect</div><div class="desc">To Keycloak's login page</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">3. Keycloak</div><div class="desc">Checks username/password</div></div>
+        <div class="arrow">→</div>
+        <div class="box you"><div class="lbl">4. JWT issued</div><div class="desc">Browser redirected back with token</div></div>
+      </div>
+      <p>Andha JWT token ah, React ovvoru API call kooda FastAPI ku attach pannும். FastAPI andha token ah Keycloak's public key vechu verify pannும் — database query pannாமலே, "idhu valid user, idhu role X" nu confirm pannிடும்.</p>
+
+      <h3>Setup — Keycloak ah Docker container ah run pannunga</h3>
+      <p>Idha namma <code>docker-compose.yml</code> la add pannுவோம்:</p>
+      <div class="term">
+        <div class="term-head"><span>docker-compose.yml — add this service</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre>  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    restart: always
+    command: start --proxy-headers xforwarded --hostname-strict=false
+    environment:
+      - KEYCLOAK_ADMIN=${KC_ADMIN_USER}
+      - KEYCLOAK_ADMIN_PASSWORD=${KC_ADMIN_PASSWORD}
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://db:5432/${DB_NAME}
+      - KC_DB_USERNAME=${DB_USER}
+      - KC_DB_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - db</pre>
+      </div>
+
+      <div class="term">
+        <div class="term-head"><span>start it</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> docker compose up -d keycloak
+<span class="pr">$</span> docker compose logs -f keycloak
+<span class="out">Keycloak started in XXXXms. Listening on: http://0.0.0.0:8080</span></pre>
+      </div>
+
+      <h3>Realm and Client create pannunga (admin console la)</h3>
+      <p>Browser la <code>https://xyz.com/auth</code> open pannitu, admin credentials la login pannunga, apром:</p>
+      <ol>
+        <li>New <strong>Realm</strong> create pannunga (e.g. <code>myapp</code>)</li>
+        <li>Andha realm kulla, <strong>Client</strong> create pannunga (e.g. <code>myapp-frontend</code>) — type: <code>public</code>, Valid Redirect URIs: <code>https://xyz.com/*</code></li>
+        <li>Backend ku ஒரு <strong>confidential client</strong> create pannunga (e.g. <code>myapp-backend</code>) — idhuku ஒரு client secret kidaikும், <code>.env</code> la store pannunga</li>
+        <li>Test user ஒரு create panni, login try pannunga</li>
+      </ol>
+
+      <div class="callout">
+        <span class="ctitle">Idhu yean important — neenga password store pannathu illa</span>
+        <p>Password hashing, brute-force protection, password reset emails — idhu ellam security-critical code. Keycloak idha already battle-tested ah handle pannудhu. Unga FastAPI app oru single password um touch pannathu — idhu thaan main benefit.</p>
+      </div>
+    </section>
+
+    <!-- 10 AUTH FLOW -->
+    <section class="section" id="authflow">
+      <div class="sec-head"><span class="sec-num">10</span><h2>Connecting FastAPI + React to Keycloak</h2></div>
+      <p class="sec-kicker">Real code — React login redirect, FastAPI token verification.</p>
+
+      <h3>React side — Keycloak JS adapter use pannунga</h3>
+      <div class="term">
+        <div class="term-head"><span>frontend/src/keycloak.js</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="kw">import</span> Keycloak <span class="kw">from</span> "keycloak-js";
+
+<span class="kw">const</span> keycloak = <span class="kw">new</span> Keycloak({
+  url: <span class="kw">process</span>.env.REACT_APP_KEYCLOAK_URL,  <span class="c1">// https://xyz.com/auth</span>
+  realm: "myapp",
+  clientId: "myapp-frontend",
+});
+
+<span class="kw">export default</span> keycloak;</pre>
+      </div>
+
+      <div class="term">
+        <div class="term-head"><span>frontend/src/App.js — protect the app</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="kw">import</span> { <span class="kw">useEffect</span>, <span class="kw">useState</span> } <span class="kw">from</span> "react";
+<span class="kw">import</span> keycloak <span class="kw">from</span> "./keycloak";
+
+<span class="kw">function</span> App() {
+  <span class="kw">const</span> [authenticated, setAuthenticated] = <span class="kw">useState</span>(<span class="kw">false</span>);
+
+  <span class="kw">useEffect</span>(() => {
+    keycloak.init({ onLoad: "login-required" }).then((auth) => {
+      setAuthenticated(auth);
+    });
+  }, []);
+
+  <span class="kw">if</span> (!authenticated) <span class="kw">return</span> &lt;p&gt;Redirecting to login...&lt;/p&gt;;
+
+  <span class="c1">// keycloak.token now holds the JWT — attach it to every API call</span>
+  <span class="kw">return</span> &lt;Dashboard token={keycloak.token} /&gt;;
+}</pre>
+      </div>
+
+      <h3>FastAPI side — verify the JWT on every protected route</h3>
+      <div class="term">
+        <div class="term-head"><span>backend/app/auth.py</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="kw">from</span> fastapi <span class="kw">import</span> Depends, HTTPException
+<span class="kw">from</span> fastapi.security <span class="kw">import</span> OAuth2AuthorizationCodeBearer
+<span class="kw">from</span> jose <span class="kw">import</span> jwt
+<span class="kw">import</span> httpx, os
+
+KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL")  <span class="c1"># http://keycloak:8080</span>
+REALM = "myapp"
+
+<span class="kw">async def</span> get_keycloak_public_key():
+    <span class="kw">async with</span> httpx.AsyncClient() <span class="kw">as</span> client:
+        resp = <span class="kw">await</span> client.get(f"{KEYCLOAK_URL}/realms/{REALM}")
+        <span class="kw">return</span> resp.json()["public_key"]
+
+<span class="kw">async def</span> verify_token(token: str = Depends(...)):
+    <span class="kw">try</span>:
+        public_key = <span class="kw">await</span> get_keycloak_public_key()
+        payload = jwt.decode(
+            token,
+            f"-----BEGIN PUBLIC KEY-----\n{public_key}\n-----END PUBLIC KEY-----",
+            algorithms=["RS256"],
+            audience="account",
+        )
+        <span class="kw">return</span> payload  <span class="c1"># contains user id, roles, email, etc.</span>
+    <span class="kw">except</span> Exception:
+        <span class="kw">raise</span> HTTPException(status_code=401, detail="Invalid or expired token")</pre>
+      </div>
+
+      <div class="term">
+        <div class="term-head"><span>backend/app/main.py — protect a route</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="kw">from</span> fastapi <span class="kw">import</span> FastAPI, Depends
+<span class="kw">from</span> .auth <span class="kw">import</span> verify_token
+
+app = FastAPI()
+
+<span class="kw">@app.get</span>("/api/profile")
+<span class="kw">async def</span> get_profile(user=Depends(verify_token)):
+    <span class="kw">return</span> {"email": user["email"], "user_id": user["sub"]}</pre>
+      </div>
+
+      <div class="callout">
+        <span class="ctitle">Idhu thaan whole point</span>
+        <p>FastAPI, ஒரு database query pannாமலே, ஒரு request valid user kitta irundhu vandhudha nu confirm pannidும். Keycloak's public key mattum check pannрुम் — password edhuvும் FastAPI kitta varathu.</p>
+      </div>
+    </section>
+
+    <!-- 11 SQUARE CONCEPT -->
+    <section class="section" id="square">
+      <div class="sec-head"><span class="sec-num">11</span><h2>Square Payments — Concept &amp; Setup</h2></div>
+      <p class="sec-kicker">Card details ah neenga touch pannாதீங்க — idhu thaan main rule.</p>
+
+      <h3>Square enna pannудhu (concept)</h3>
+      <p><strong>Square</strong> ஒரு payment processor — credit/debit card details ah secure ah handle pannி, money ah customer kitta irundhu unga business account ku transfer pannудhu. Critical rule: <strong>raw card numbers unga server la eppovum thொடathu</strong> — Square's frontend SDK (Web Payments SDK) andha sensitive data ah directly Square ku anупும், unga FastAPI ku ஒரு "token" mattum varும்.</p>
+
+      <div class="diagram" style="flex-wrap:wrap;">
+        <div class="box"><div class="lbl">Card Details</div><div class="desc">Entered in Square's secure form</div></div>
+        <div class="arrow">→</div>
+        <div class="box you"><div class="lbl">Square Servers</div><div class="desc">Card never touches your server</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">Your FastAPI</div><div class="desc">Receives only a one-time token</div></div>
+      </div>
+
+      <h3>Sandbox account setup pannunga</h3>
+      <ol>
+        <li><a href="#" onclick="return false;">developer.squareup.com</a> la free developer account create pannunga</li>
+        <li>New <strong>Application</strong> create pannunga (e.g. "myapp")</li>
+        <li><strong>Sandbox</strong> tab la — Application ID, Access Token, Location ID copy pannunga</li>
+        <li>Idha ellam <code>.env</code> la store pannunga, code la illa</li>
+      </ol>
+
+      <div class="term">
+        <div class="term-head"><span>.env additions</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre>SQUARE_ACCESS_TOKEN=EAAAxxxxxxxxxxxxxxxxxx
+SQUARE_APPLICATION_ID=sandbox-sq0idb-xxxxxxxxxxxx
+SQUARE_LOCATION_ID=Lxxxxxxxxxxxx
+SQUARE_WEBHOOK_SIGNATURE_KEY=xxxxxxxxxxxx
+SQUARE_ENVIRONMENT=sandbox</pre>
+      </div>
+
+      <div class="callout warn">
+        <span class="ctitle">Sandbox vs Production</span>
+        <p>Sandbox la fake test cards use pannлாம் (real money illa) — development முடிஞ்சா, Square dashboard la "Production" credentials ku switch pannனும், and <code>SQUARE_ENVIRONMENT=production</code> ku change pannனும். Rendும் different API keys.</p>
+      </div>
+    </section>
+
+    <!-- 12 CHECKOUT -->
+    <section class="section" id="checkout">
+      <div class="sec-head"><span class="sec-num">12</span><h2>Square Checkout — Frontend + Backend Flow</h2></div>
+      <p class="sec-kicker">Full flow — card form to payment confirmation.</p>
+
+      <div class="diagram" style="flex-wrap:wrap;">
+        <div class="box"><div class="lbl">1. React</div><div class="desc">Square Web SDK card form</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">2. Square JS</div><div class="desc">Tokenizes card → returns nonce</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">3. FastAPI</div><div class="desc">Receives nonce, calls Square API</div></div>
+        <div class="arrow">→</div>
+        <div class="box you"><div class="lbl">4. Square API</div><div class="desc">Charges card, returns result</div></div>
+      </div>
+
+      <h3>Frontend — Square Web Payments SDK</h3>
+      <div class="term">
+        <div class="term-head"><span>frontend — load the SDK (index.html)</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre>&lt;script src="https://sandbox.web.squarecdn.com/v1/square.js"&gt;&lt;/script&gt;</pre>
+      </div>
+
+      <div class="term">
+        <div class="term-head"><span>frontend/src/Checkout.js</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="kw">import</span> { <span class="kw">useEffect</span>, <span class="kw">useState</span> } <span class="kw">from</span> "react";
+
+<span class="kw">function</span> Checkout({ token, orderId, amount }) {
+  <span class="kw">const</span> [card, setCard] = <span class="kw">useState</span>(<span class="kw">null</span>);
+
+  <span class="kw">useEffect</span>(() => {
+    <span class="kw">async function</span> initSquare() {
+      <span class="kw">const</span> payments = <span class="kw">window</span>.Square.payments(
+        <span class="kw">process</span>.env.REACT_APP_SQUARE_APP_ID,
+        <span class="kw">process</span>.env.REACT_APP_SQUARE_LOCATION_ID
+      );
+      <span class="kw">const</span> cardInstance = <span class="kw">await</span> payments.card();
+      <span class="kw">await</span> cardInstance.attach("#card-container");
+      setCard(cardInstance);
+    }
+    initSquare();
+  }, []);
+
+  <span class="kw">async function</span> handlePay() {
+    <span class="kw">const</span> result = <span class="kw">await</span> card.tokenize();  <span class="c1">// card never leaves the browser as raw data</span>
+    <span class="kw">if</span> (result.status === "OK") {
+      <span class="kw">const</span> res = <span class="kw">await</span> fetch("/api/payments/charge", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          source_id: result.token,   <span class="c1">// the one-time nonce</span>
+          order_id: orderId,
+          amount_cents: amount,
+        }),
+      });
+      <span class="kw">const</span> data = <span class="kw">await</span> res.json();
+      <span class="kw">console</span>.log("Payment result:", data);
+    }
+  }
+
+  <span class="kw">return</span> (
+    &lt;div&gt;
+      &lt;div id="card-container"&gt;&lt;/div&gt;
+      &lt;button onClick={handlePay}&gt;Pay ${amount / 100}&lt;/button&gt;
+    &lt;/div&gt;
+  );
+}</pre>
+      </div>
+
+      <h3>Backend — FastAPI creates the actual charge</h3>
+      <div class="term">
+        <div class="term-head"><span>backend/app/payments.py</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="kw">from</span> fastapi <span class="kw">import</span> APIRouter, Depends, HTTPException
+<span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel
+<span class="kw">import</span> httpx, os, uuid
+<span class="kw">from</span> .auth <span class="kw">import</span> verify_token
+
+router = APIRouter()
+SQUARE_BASE = "https://connect.squareupsandbox.com"  <span class="c1"># sandbox URL</span>
+
+<span class="kw">class</span> ChargeRequest(BaseModel):
+    source_id: str
+    order_id: str
+    amount_cents: int
+
+<span class="kw">@router.post</span>("/api/payments/charge")
+<span class="kw">async def</span> charge(req: ChargeRequest, user=Depends(verify_token)):
+    <span class="kw">async with</span> httpx.AsyncClient() <span class="kw">as</span> client:
+        resp = <span class="kw">await</span> client.post(
+            f"{SQUARE_BASE}/v2/payments",
+            headers={
+                "Authorization": f"Bearer {os.environ['SQUARE_ACCESS_TOKEN']}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "source_id": req.source_id,
+                "idempotency_key": str(uuid.uuid4()),  <span class="c1"># prevents double-charging</span>
+                "amount_money": {
+                    "amount": req.amount_cents,
+                    "currency": "USD",
+                },
+            },
+        )
+    result = resp.json()
+    <span class="kw">if</span> resp.status_code != 200:
+        <span class="kw">raise</span> HTTPException(status_code=400, detail=result.get("errors"))
+
+    <span class="c1"># save payment status to your own database here, linked to req.order_id</span>
+    <span class="kw">return</span> {"status": "success", "payment_id": result["payment"]["id"]}</pre>
+      </div>
+
+      <div class="callout danger">
+        <span class="ctitle">idempotency_key — idha eppovும் miss pannாதீங்க</span>
+        <p>Network blip aaна, user "Pay" button rendu times click pannலாம். <code>idempotency_key</code> illama, rendu charges create aagалாம் — same key pass pannina, Square automatic ah duplicate ah detect pannி, ஒரே charge mattum process pannும்.</p>
+      </div>
+    </section>
+
+    <!-- 13 WEBHOOKS -->
+    <section class="section" id="webhooks">
+      <div class="sec-head"><span class="sec-num">13</span><h2>Square Webhooks &amp; Order Confirmation</h2></div>
+      <p class="sec-kicker">Payment async ah confirm aagும்போது, Square unga server ku notify pannудhu eppadi.</p>
+
+      <p>Charge API call response, "payment created" nu sollum — but real settlement, refund, dispute mathiri events, asynchronous ah Square unga server ku <strong>webhook</strong> via anupুম். Idhuku ஒரு dedicated, public endpoint வேணும்.</p>
+
+      <div class="diagram" style="flex-wrap:wrap;">
+        <div class="box"><div class="lbl">Square Servers</div><div class="desc">Payment status changes</div></div>
+        <div class="arrow">→</div>
+        <div class="box you"><div class="lbl">POST /api/webhooks/square</div><div class="desc">Your FastAPI endpoint</div></div>
+        <div class="arrow">→</div>
+        <div class="box"><div class="lbl">Verify signature</div><div class="desc">Confirms it's really from Square</div></div>
+      </div>
+
+      <h3>Square Dashboard la webhook register pannunga</h3>
+      <p>Developer Dashboard → Webhooks → "Add Endpoint" → URL: <code>https://xyz.com/api/webhooks/square</code>, events: <code>payment.created</code>, <code>payment.updated</code>.</p>
+
+      <h3>FastAPI — secure webhook endpoint</h3>
+      <div class="term">
+        <div class="term-head"><span>backend/app/webhooks.py</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="kw">from</span> fastapi <span class="kw">import</span> APIRouter, Request, HTTPException
+<span class="kw">import</span> hmac, hashlib, base64, os
+
+router = APIRouter()
+SIGNATURE_KEY = os.environ["SQUARE_WEBHOOK_SIGNATURE_KEY"]
+NOTIFICATION_URL = "https://xyz.com/api/webhooks/square"
+
+<span class="kw">def</span> verify_signature(body: bytes, signature: str) -> bool:
+    <span class="c1"># Square signs: HMAC-SHA256(notification_url + raw_body, signature_key)</span>
+    string_to_sign = NOTIFICATION_URL + body.decode()
+    computed = hmac.new(
+        SIGNATURE_KEY.encode(), string_to_sign.encode(), hashlib.sha256
+    ).digest()
+    computed_b64 = base64.b64encode(computed).decode()
+    <span class="kw">return</span> hmac.compare_digest(computed_b64, signature)
+
+<span class="kw">@router.post</span>("/api/webhooks/square")
+<span class="kw">async def</span> square_webhook(request: Request):
+    raw_body = <span class="kw">await</span> request.body()
+    signature = request.headers.get("x-square-hmacsha256-signature", "")
+
+    <span class="kw">if not</span> verify_signature(raw_body, signature):
+        <span class="kw">raise</span> HTTPException(status_code=401, detail="Invalid webhook signature")
+
+    payload = <span class="kw">await</span> request.json()
+    event_type = payload.get("type")
+
+    <span class="kw">if</span> event_type == "payment.updated":
+        payment = payload["data"]["object"]["payment"]
+        <span class="kw">if</span> payment["status"] == "COMPLETED":
+            <span class="c1"># mark order as paid in your own database here</span>
+            <span class="kw">pass</span>
+
+    <span class="kw">return</span> {"received": <span class="kw">True</span>}</pre>
+      </div>
+
+      <div class="callout danger">
+        <span class="ctitle">Signature verify pannாமல் webhook ah trust pannாதீங்க</span>
+        <p>Andha endpoint URL public — yaru venalum, edhuvும் POST pannலாம். Signature verify pannாமல் payload ah trust pannina, யாரும் fake "payment completed" event anупி order ah free ah unlock panna mудிyும். <code>verify_signature</code> step skip pannாதீங்க eப்போதும்.</p>
+      </div>
+
+      <h3>Nginx — webhook route raw body pass pannனும்</h3>
+      <p>Module 08 oda <code>/api/</code> location block, idha already handle pannідum (proxy_pass full path forward pannудhu) — additional config thevai illa, but raw body buffering off vechirukanum (FastAPI default ah handle pannидும்).</p>
+    </section>
+
+    <!-- 14 HARDENING -->
+    <section class="section" id="hardening">
+      <div class="sec-head"><span class="sec-num">14</span><h2>Production Security &amp; Maintenance</h2></div>
+      <p class="sec-kicker">Deploy panna apuram, idha regular ah check pannнीங்க.</p>
+
+      <h3>Secrets management</h3>
+      <div class="grid">
+        <div class="card"><span class="ic">⛨</span><h4>.env never commit pannாதீங்க</h4><p><code>.gitignore</code> la add pannunga. Git history la already commit aaginaal, andha secret ah rotate pannunga.</p></div>
+        <div class="card"><span class="ic">⌘</span><h4>File permissions lock pannunga</h4><p><code>chmod 600 .env</code> — owner mattum read/write panna mudiyும்.</p></div>
+        <div class="card"><span class="ic">▣</span><h4>Different secrets per environment</h4><p>Sandbox Square keys ≠ Production keys. Dev DB password ≠ Prod DB password.</p></div>
+        <div class="card"><span class="ic">⎘</span><h4>Rotate periodically</h4><p>DB passwords, Keycloak client secrets — every few months rotate pannunga, especially staff change aana.</p></div>
+      </div>
+
+      <h3>Backups — automated, tested</h3>
+      <div class="term">
+        <div class="term-head"><span>verify backups actually restore</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="c1"># test restore on a throwaway database — don't assume backups work</span>
+<span class="pr">$</span> gunzip -c /home/deploy/backups/appdb_20260601.sql.gz | docker compose exec -T db psql -U appuser -d test_restore_db</pre>
+      </div>
+
+      <h3>Updates — system + containers</h3>
+      <div class="term">
+        <div class="term-head"><span>monthly maintenance routine</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="c1"># OS-level security updates</span>
+<span class="pr">$</span> sudo apt update && sudo apt upgrade -y
+
+<span class="c1"># rebuild images to pick up base-image security patches</span>
+<span class="pr">$</span> docker compose pull
+<span class="pr">$</span> docker compose up -d --build
+
+<span class="c1"># remove old unused images/containers</span>
+<span class="pr">$</span> docker system prune -af</pre>
+      </div>
+
+      <h3>Monitoring &amp; logs</h3>
+      <div class="term">
+        <div class="term-head"><span>quick health checks</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><span class="pr">$</span> docker compose ps                      <span class="c1"># all services up?</span>
+<span class="pr">$</span> docker compose logs --since 1h backend <span class="c1"># recent backend errors</span>
+<span class="pr">$</span> sudo fail2ban-client status sshd        <span class="c1"># any blocked IPs?</span>
+<span class="pr">$</span> df -h                                   <span class="c1"># disk space — logs/backups can fill it</span>
+<span class="pr">$</span> sudo certbot certificates                <span class="c1"># SSL cert expiry date</span></pre>
+      </div>
+
+      <h3>Full production checklist</h3>
+      <div class="checklist">
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">Root SSH login disabled, key-only auth enforced</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">UFW active — only 22, 80, 443 reachable publicly</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">Postgres has no published port — internal network only</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">Frontend/backend/Keycloak bound to 127.0.0.1, not 0.0.0.0</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">.env file permissions locked, excluded from git</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">SSL certificate active, auto-renewal confirmed</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">FastAPI verifies every protected route's JWT against Keycloak</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">Square webhook signature verification in place</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">Payment calls use idempotency_key</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">Daily automated DB backups, tested restore at least once</span></li>
+        <li><span class="box" onclick="toggleCheck(this)"></span><span class="label">Switched Square keys from sandbox to production before going live</span></li>
+      </div>
+
+      <div class="callout">
+        <span class="ctitle">Idhu thaan complete picture</span>
+        <p>React, FastAPI, Postgres — Docker la dockerized. Nginx single door ah irundhu SSL kuduthu route pannудhu. Keycloak login handle pannудhu. Square payments process pannудhu, webhook verify pannудhu. Ellame ஒரே VPS la, correctly isolated ah run aagудhu. Idhu thaan real production deployment.</p>
+      </div>
+    </section>
+
+    <!-- FINAL -->
+    <div class="final">
+      <div class="topline"></div>
+      <div class="eyebrow">masterclass complete</div>
+      <h2>Unga app ippo production la live.</h2>
+      <p>React + FastAPI + Postgres dockerized ah irukku, Nginx behind ஒரே SSL door la protect aaginaalu, Keycloak login handle pannудhu, Square payments process pannудhu — secure webhooks kooda. Idhu thaan real, production-grade architecture — toy project alla.</p>
+      <div class="badge-row">
+        <span class="badge">✓ Dockerized Stack</span>
+        <span class="badge">✓ Nginx + SSL</span>
+        <span class="badge">✓ Keycloak Auth</span>
+        <span class="badge">✓ Square Payments</span>
+        <span class="badge">✓ Production Hardened</span>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const bootLines = [
+    "$ docker compose ps",
+    "all services healthy — frontend, backend, db running",
+    "$ echo 'production ready'",
+    "production ready → scroll down to deploy it"
+  ];
+  const bootEl = document.getElementById('bootTerm');
+  let li = 0, ci = 0;
+  function typeBoot(){
+    if(li >= bootLines.length){
+      const c = document.createElement('span'); c.className='caret';
+      bootEl.appendChild(c);
+      return;
+    }
+    if(ci === 0){
+      const newLine = document.createElement('p');
+      newLine.className = 'line';
+      bootEl.appendChild(newLine);
+    }
+    const lineText = bootLines[li];
+    const p = bootEl.lastElementChild;
+    if(ci < lineText.length){
+      let isPrompt = lineText.startsWith('$');
+      p.innerHTML = (isPrompt ? '<span class="prompt">' + escapeHtml(lineText.slice(0,1)) + '</span>' + escapeHtml(lineText.slice(1,ci+1)) : escapeHtml(lineText.slice(0,ci+1)));
+      ci++;
+      setTimeout(typeBoot, lineText.startsWith('$') ? 35 : 14);
+    } else {
+      li++; ci = 0;
+      setTimeout(typeBoot, 260);
+    }
+  }
+  function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  setTimeout(typeBoot, 400);
+
+  function copyCode(btn){
+    const pre = btn.closest('.term').querySelector('pre');
+    const text = pre.innerText;
+    navigator.clipboard.writeText(text).then(()=>{
+      const old = btn.textContent;
+      btn.textContent = 'copied ✓';
+      btn.classList.add('copied');
+      setTimeout(()=>{ btn.textContent = old; btn.classList.remove('copied'); }, 1500);
+    }).catch(()=>{
+      btn.textContent = 'failed';
+      setTimeout(()=>{ btn.textContent = 'copy'; }, 1500);
+    });
+  }
+
+  function toggleCheck(box){
+    box.classList.toggle('done');
+    box.closest('li').classList.toggle('done');
+  }
+
+  // ---- mobile sidebar drawer ----
+  const sidebar = document.getElementById('sidebar');
+  const menuBtn = document.getElementById('menuBtn');
+  const overlay = document.getElementById('sidebarOverlay');
+
+  function openSidebar(){
+    sidebar.classList.add('open');
+    overlay.classList.add('show');
+    menuBtn.setAttribute('aria-expanded','true');
+  }
+  function closeSidebar(){
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+    menuBtn.setAttribute('aria-expanded','false');
+  }
+  menuBtn.addEventListener('click', ()=>{
+    sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+  overlay.addEventListener('click', closeSidebar);
+  document.querySelectorAll('.navlist a').forEach(a=>{
+    a.addEventListener('click', closeSidebar);
+  });
+
+  const navLinks = document.querySelectorAll('.navlist a');
+  const sectionIds = ['intro','architecture','vpssetup','dockerinstall','backend','frontend','postgres','compose','domainssl','keycloak','authflow','square','checkout','webhooks','hardening'];
+
+  function onScroll(){
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = docHeight > 0 ? Math.min(100, (scrollTop/docHeight)*100) : 0;
+    document.getElementById('progressFill').style.width = pct + '%';
+
+    let current = sectionIds[0];
+    sectionIds.forEach(id=>{
+      const el = document.getElementById(id);
+      if(el){
+        const rect = el.getBoundingClientRect();
+        if(rect.top <= 140) current = id;
+      }
+    });
+    navLinks.forEach(a=>{
+      a.classList.toggle('active', a.getAttribute('href') === '#'+current);
+    });
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+</script>
+
+</body>
+</html>

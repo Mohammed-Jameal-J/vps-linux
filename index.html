@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VPS &amp; Linux Masterclass</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Tamil:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg: #06100b;
@@ -21,7 +21,7 @@
     --amber: #ffcf6b;
     --red: #ff6b6b;
     --mono: 'JetBrains Mono', monospace;
-    --sans: 'Inter', sans-serif;
+    --sans: 'Inter', 'Noto Sans Tamil', sans-serif;
   }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
@@ -46,6 +46,28 @@
   .shell{display:grid;grid-template-columns:270px 1fr;min-height:100vh;}
   @media (max-width:900px){.shell{grid-template-columns:1fr;}}
 
+  /* mobile top bar — hidden on desktop */
+  .mobile-topbar{
+    display:none;
+    position:sticky;top:0;z-index:40;
+    align-items:center;justify-content:space-between;
+    background:var(--bg-soft);border-bottom:1px solid var(--line);
+    padding:14px 18px;
+  }
+  @media (max-width:900px){.mobile-topbar{display:flex;}}
+  .mobile-topbar .brand{margin-bottom:0;}
+  .menu-btn{
+    background:var(--panel);border:1px solid var(--line);color:var(--green);
+    width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;flex:none;
+  }
+  .menu-btn svg{width:18px;height:18px;}
+
+  .sidebar-overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:45;
+  }
+  .sidebar-overlay.show{display:block;}
+
   /* sidebar */
   .sidebar{
     position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
@@ -54,7 +76,13 @@
     padding:24px 18px 40px;
   }
   @media (max-width:900px){
-    .sidebar{position:relative;height:auto;border-right:none;border-bottom:1px solid var(--line);}
+    .sidebar{
+      position:fixed;top:0;left:0;height:100vh;width:280px;max-width:82vw;
+      z-index:50;border-right:1px solid var(--line);
+      transform:translateX(-100%);transition:transform .25s ease;
+      box-shadow:20px 0 40px -20px rgba(0,0,0,0.5);
+    }
+    .sidebar.open{transform:translateX(0);}
   }
   .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
   .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);}
@@ -80,14 +108,16 @@
   /* main */
   main{padding:0;min-width:0;}
   .section{padding:64px 56px;max-width:880px;border-bottom:1px solid var(--line);}
-  @media (max-width:700px){.section{padding:44px 20px;}}
+  @media (max-width:700px){.section{padding:40px 22px;}}
+  @media (max-width:480px){.section{padding:32px 16px;}}
   .section:last-of-type{border-bottom:none;}
 
   /* hero */
   .hero{
     padding:72px 56px 56px;max-width:980px;position:relative;
   }
-  @media (max-width:700px){.hero{padding:48px 20px 36px;}}
+  @media (max-width:700px){.hero{padding:36px 22px 32px;}}
+  @media (max-width:480px){.hero{padding:28px 16px 28px;}}
   .hero-term{
     background:var(--panel);border:1px solid var(--line);border-radius:10px;
     overflow:hidden;box-shadow:0 0 0 1px rgba(57,255,143,0.05), 0 30px 60px -30px rgba(0,0,0,0.6);
@@ -256,9 +286,17 @@
 </head>
 <body>
 
+<div class="mobile-topbar">
+  <div class="brand"><span class="dot"></span><span>root@masterclass</span></div>
+  <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <div class="shell">
   <!-- ========== SIDEBAR ========== -->
-  <nav class="sidebar">
+  <nav class="sidebar" id="sidebar">
     <div class="brand"><span class="dot"></span><span>root@masterclass</span></div>
     <p class="sub">// VPS + Linux + Security syllabus</p>
     <div class="progress-rail"><div class="progress-fill" id="progressFill"></div></div>
@@ -287,7 +325,7 @@
     <section class="hero" id="intro">
       <div class="eyebrow">masterclass · 01 of 14 modules</div>
       <h1 class="title">From zero to a <span class="accent">secured Linux server</span><br>you actually understand.</h1>
-      <p class="lede">A complete, hands-on path through VPS, Linux, Ubuntu, SSH, firewalls, Redis, and SSL — explained in plain language, with the real commands you'll type, in order.</p>
+      <p class="lede">VPS, Linux, Ubuntu, SSH, firewall, Redis, SSL — ellame real-world examples kooda, Tanglish la easy ah explain pannirom. Padichu முடிந்தா, யாரிடமும் idha நீங்களே explain panna mudiyum — adhu thaan goal.</p>
 
       <div class="hero-term">
         <div class="term-bar">
@@ -304,9 +342,9 @@
     <!-- 01 WHAT IS A VPS -->
     <section class="section" id="vps">
       <div class="sec-head"><span class="sec-num">01</span><h2>What is a VPS?</h2></div>
-      <p class="sec-kicker">Before you connect to anything, know what you're actually renting.</p>
+      <p class="sec-kicker">Connect panna munnadi, neenga enna vaangiringa nu therinjukonga.</p>
 
-      <p><strong>VPS stands for Virtual Private Server.</strong> A big physical machine sitting in a data center gets sliced into several independent virtual machines using a layer called a <em>hypervisor</em>. Each slice — your VPS — gets its own dedicated chunk of CPU, RAM, disk, and a public IP address. It behaves exactly like a full computer, except you reach it over the internet instead of sitting in front of it.</p>
+      <p><strong>VPS na Virtual Private Server.</strong> Real world la nenaikalam — ஒரு பெரிய apartment building irukku. Andha building ah developer pala flats ah split pannறான். Ovvoru flat ku separate lock, separate address, separate electricity meter irukum — ஆனா building structure (foundation, walls) ellarukum common. VPS exactly idhe maari than — ஒரு physical server (data center la irukற real machine) ah, <em>hypervisor</em> nu ஒரு software vechu, pala "virtual" servers ah split pannuvaanga. Ovvoru slice (unga VPS) ku own CPU, RAM, disk, public IP address kidaikum. Idhu exactly ஒரு full computer mathiri behave aagum, but neenga internet vazhi mattum reach pannumudiyum — straight ah munnadi nikkamal.</p>
 
       <div class="diagram">
         <div class="box"><div class="lbl">Physical Server</div><div class="desc">One real machine in a data center</div></div>
@@ -316,40 +354,42 @@
         <div class="box you"><div class="lbl">Your VPS</div><div class="desc">Your own CPU, RAM, disk &amp; IP</div></div>
       </div>
 
-      <h3>Why not just use shared hosting?</h3>
-      <p>Shared hosting puts your website on a server alongside hundreds of others with no real isolation — one noisy neighbor can slow everyone down, and you can't install custom software. A VPS gives you <strong>root access</strong>: full control to install anything, run any service (like Redis, a database, or a custom app), and configure the operating system exactly how you want.</p>
+      <h3>Shared hosting yean podhuma? (real-world example)</h3>
+      <p>Shared hosting na, ஒரு PG (paying guest) accommodation mathiri — ஒரே kitchen, ஒரே bathroom, pala people share pannunga. Adjacent room la யாரோ over-use pannina, ungaluku problem aagum. Custom equipment (cooking gadget) vekka permission illa. VPS na, neenga தனி flat vaangirukeenga — andha flat kulla enna venalum pannலாம் (cook pannலாம், furniture maathலாம்), idhuku <strong>root access</strong> nu peyaru — full admin control, edhuvum install pannலாம் (Redis, database, custom app), OS ah unga ishtam maari configure pannலாம்.</p>
 
       <div class="grid">
-        <div class="card"><span class="ic">▣</span><h4>Dedicated resources</h4><p>Your RAM and CPU allocation isn't shared the way it is on basic shared hosting.</p></div>
-        <div class="card"><span class="ic">⌘</span><h4>Root access</h4><p>You're the administrator. You can install, configure, and break things — and fix them.</p></div>
-        <div class="card"><span class="ic">⇄</span><h4>Public IP address</h4><p>Your server has its own address on the internet, reachable from anywhere.</p></div>
-        <div class="card"><span class="ic">⎘</span><h4>Pay for what you pick</h4><p>You choose the OS, the RAM/disk tier, and the region your server lives in.</p></div>
+        <div class="card"><span class="ic">▣</span><h4>Dedicated resources</h4><p>Unga RAM, CPU — basic shared hosting mathiri யாரோடவும் share aagathu.</p></div>
+        <div class="card"><span class="ic">⌘</span><h4>Root access</h4><p>Neengale admin. Install pannலாம், configure pannலாம், break aanaalum fix pannலாம்.</p></div>
+        <div class="card"><span class="ic">⇄</span><h4>Public IP address</h4><p>Unga server ku own address — internet la எங்க இருந்தும் reach pannலாம்.</p></div>
+        <div class="card"><span class="ic">⎘</span><h4>Pay for what you pick</h4><p>OS, RAM/disk tier, region — neenga than select pannறீங்க.</p></div>
       </div>
 
       <div class="callout">
         <span class="ctitle">Common providers</span>
-        <p>DigitalOcean, Linode (Akamai), Vultr, AWS Lightsail, Hetzner, and OVH are popular places to spin up a VPS. The setup steps in this masterclass apply to virtually all of them once you've created the server and have its IP address.</p>
+        <p>DigitalOcean, Linode (Akamai), Vultr, AWS Lightsail, Hetzner, OVH — idhu ellam VPS vaanga popular places. Server create panni, IP address kitticha, idhula irukற steps ellame almost same ah work aagum.</p>
       </div>
     </section>
 
     <!-- 02 LINUX FUNDAMENTALS -->
     <section class="section" id="linux">
       <div class="sec-head"><span class="sec-num">02</span><h2>Linux Fundamentals</h2></div>
-      <p class="sec-kicker">The operating system that runs almost every server on the internet.</p>
+      <p class="sec-kicker">Internet la irukற almost ella servers layum run aagற operating system.</p>
 
-      <p><strong>Linux</strong> is a free, open-source operating system kernel originally written by Linus Torvalds in 1991. Unlike Windows, it's built around a philosophy of small tools that do one job well, configuration via plain text files, and a strict permission system — which is exactly why it dominates the server world.</p>
+      <p><strong>Linux</strong> ஒரு free, open-source operating system kernel — 1991 la Linus Torvalds nu ஆள் andha first version ah write pannaன். Windows mathiri illama, Linux la philosophy enna na — chinna chinna tools, ஒவ்வொன்றும் ஒரு வேலையை மட்டும் correct ah pannum, configuration plain text files la than store aagum, and strict permission system irukum. Idhu thaan server world la Linux dominate panna main reason.</p>
 
-      <h3>Distributions ("distros")</h3>
-      <p>Linux itself is just the kernel — the core engine. A <strong>distribution</strong> packages that kernel with system tools, a package manager, and default configuration into something usable. Ubuntu, Debian, CentOS, Fedora, and Arch are all distributions of the same underlying Linux kernel, with different philosophies and tools.</p>
+      <h3>Distributions ("distros") — real-world example</h3>
+      <p>Linux na engine mattum — car engine mathiri. <strong>Distribution</strong> na, andha engine ah vechu build pannina full car — body, seats, dashboard ellam serthu. Maruti, Hyundai, Tata — ellame petrol/diesel engine vechu different cars build pannanga, ஒவ்வொருத்தருக்கும் different features, different look. Same maari, Ubuntu, Debian, CentOS, Fedora, Arch — ellame same Linux kernel vechi, different tools, different philosophy la build pannina "distros".</p>
 
+<div class="table-wrap">
       <table>
-        <tr><th>Concept</th><th>What it means</th></tr>
-        <tr><td>Kernel</td><td>The core program that talks directly to hardware (CPU, memory, disk).</td></tr>
-        <tr><td>Shell</td><td>The command-line interpreter — <code>bash</code> is the most common — where you type commands.</td></tr>
-        <tr><td>Filesystem</td><td>Everything is a file. Configuration, devices, and processes all live under <code>/</code>.</td></tr>
-        <tr><td>Package manager</td><td>Installs and updates software. Ubuntu uses <code>apt</code>.</td></tr>
-        <tr><td>Root user</td><td>The administrator account with unrestricted access — usually accessed via <code>sudo</code>.</td></tr>
+        <tr><th>Concept</th><th>Real-world example</th></tr>
+        <tr><td>Kernel</td><td>Car engine — hardware (CPU, memory, disk) kooda direct ah pesum core program.</td></tr>
+        <tr><td>Shell</td><td>Steering wheel + pedals — neenga commands type panni drive pannற interface (<code>bash</code> most common).</td></tr>
+        <tr><td>Filesystem</td><td>Office filing cabinet — ella files um, devices um, processes um <code>/</code> kulla ஒரு systematic ah arrange aagi irukum.</td></tr>
+        <tr><td>Package manager</td><td>Mobile la Play Store mathiri — software install/update pannற tool. Ubuntu la <code>apt</code>.</td></tr>
+        <tr><td>Root user</td><td>Building oda master key vechi irukற watchman — everything access pannலாம், usually <code>sudo</code> via.</td></tr>
       </table>
+      </div>
 
       <h3>Commands you'll use constantly</h3>
       <div class="term">
@@ -373,29 +413,29 @@
       </div>
 
       <div class="callout warn">
-        <span class="ctitle">Why permissions matter</span>
-        <p>Linux file permissions (read/write/execute, for owner/group/others) are the foundation of server security. A misconfigured permission — like a private key readable by everyone — is one of the most common real-world breach causes. You'll set this correctly in the SSH section.</p>
+        <span class="ctitle">Permissions yean important — real-world example</span>
+        <p>Unga house key ah, neighbor ellarukum copy kuduthudradhu mathiri — Linux la file permission (read/write/execute — owner/group/others ku) wrong ah set pannina, yarum andha file ah padikalam, edit pannலாம். Private key ah ellarukum readable ah vechirundha, idhu thaan real-world la common breach reason. Idha correct ah set panrathu, SSH section la paaklam.</p>
       </div>
     </section>
 
     <!-- 03 UBUNTU SETUP -->
     <section class="section" id="ubuntu">
       <div class="sec-head"><span class="sec-num">03</span><h2>Ubuntu Server Setup</h2></div>
-      <p class="sec-kicker">Choosing and preparing the distribution you'll actually run.</p>
+      <p class="sec-kicker">Real ah run pannற distribution ah choose panni, prepare pannuvom.</p>
 
-      <p><strong>Ubuntu</strong> is a Linux distribution maintained by Canonical, and it's the most widely used distro for VPS hosting — long-term support (LTS) releases get 5 years of security updates, predictable tooling, and the largest community, so almost every guide and package assumes Ubuntu by default.</p>
+      <p><strong>Ubuntu</strong> ஒரு Linux distribution — Canonical company maintain pannudhu, and VPS hosting ku most widely used distro idhu than. Long-term support (LTS) releases ku 5 years security updates kidaikum, tools predictable ah irukum, and biggest community — almost every guide, every package, Ubuntu ah than default ah assume pannudhu. Real-world example: idhu Toyota Corolla mathiri — exciting illa, but everywhere spare parts kidaikum, everyone ku theriyum, reliable ah irukum.</p>
 
-      <h3>Step 1 — Provision the server</h3>
-      <p>When creating your VPS through any provider, you'll typically choose:</p>
+      <h3>Step 1 — Server provision pannunga</h3>
+      <p>Edhuvum provider la VPS create pannumபோது, neenga ipdi select pannனும்:</p>
       <ul>
-        <li><strong>OS image:</strong> Ubuntu 24.04 LTS or 22.04 LTS (stick to LTS releases for servers)</li>
-        <li><strong>Size/plan:</strong> 1–2GB RAM is enough to learn on; scale up later</li>
-        <li><strong>Authentication:</strong> choose <em>SSH key</em> over password if offered — covered next section</li>
-        <li><strong>Region:</strong> pick one geographically close to your users</li>
+        <li><strong>OS image:</strong> Ubuntu 24.04 LTS or 22.04 LTS (servers ku eppovum LTS releases mattum)</li>
+        <li><strong>Size/plan:</strong> Learn panna 1–2GB RAM podhum; later scale up pannலாம்</li>
+        <li><strong>Authentication:</strong> Password kitta <em>SSH key</em> option irundha அதை choose pannunga — next section la paaklam</li>
+        <li><strong>Region:</strong> Unga users ku geographically close ah ஒரு region select pannunga</li>
       </ul>
 
-      <h3>Step 2 — First login & update</h3>
-      <p>The very first thing you do on any fresh server, before installing anything else, is update the package index and upgrade existing packages:</p>
+      <h3>Step 2 — First login &amp; update</h3>
+      <p>Fresh server kitticha, edhuvum install panna முன்னாடி, first pannனும் — package list refresh panni, existing packages update pannனும். Real-world example: புது வீட்டுக்கு குடி வந்தவுடன், first cleaning pannறது மாதிரி — அப்புறம் தான் furniture வேலை ஆரம்பிக்கலாம்:</p>
       <div class="term">
         <div class="term-head"><span>first boot</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
         <pre><span class="pr">$</span> sudo apt update                 <span class="c1"># refresh package list</span>
@@ -404,8 +444,8 @@
 <span class="pr">$</span> sudo reboot                     <span class="c1"># apply kernel updates if any</span></pre>
       </div>
 
-      <h3>Step 3 — Create a non-root user</h3>
-      <p>You'll log in as <code>root</code> initially, but running everything as root daily is risky — one mistyped command can damage the system. Create a regular user with sudo privileges instead:</p>
+      <h3>Step 3 — Non-root user create pannunga</h3>
+      <p>Initially neenga <code>root</code> ah than login aaginga, but daily ah ellame root ah pannrathu risky — ஒரு typo command, whole system ah damage pannலாம். Idhuku pathila, sudo privileges kooda ஒரு regular user create pannunga:</p>
       <div class="term">
         <div class="term-head"><span>create a sudo user</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
         <pre><span class="pr">$</span> adduser yourname             <span class="c1"># creates the user, prompts for a password</span>
@@ -414,19 +454,19 @@
       </div>
 
       <div class="callout">
-        <span class="ctitle">Mental model</span>
-        <p>Think of <code>root</code> as the master key to the building, and your new user as a keycard with admin permission. You use the keycard daily; the master key stays locked away unless truly needed.</p>
+        <span class="ctitle">Mental model — real-world example</span>
+        <p><code>root</code> ah, building oda master key nu nenaikalam — andha key vechi every door open pannலாம், ஆனா miss aana romba problem. Unga new user ah, admin permission kooda keycard nu nenaikalam — daily idha than use pannuvinga; master key locked ah than vechirukum, romba avasiyam na mattum use pannறீங்க.</p>
       </div>
     </section>
 
     <!-- 04 SSH -->
     <section class="section" id="ssh">
       <div class="sec-head"><span class="sec-num">04</span><h2>Connecting via SSH</h2></div>
-      <p class="sec-kicker">SSH is the secure tunnel between your laptop and your VPS.</p>
+      <p class="sec-kicker">SSH na, unga laptop ku unga VPS ku idhukula irukற secure tunnel.</p>
 
-      <p><strong>SSH (Secure Shell)</strong> is an encrypted protocol that lets you open a remote terminal on another machine. Everything you type, and everything the server sends back, travels through an encrypted channel — nobody on the network in between can read it.</p>
+      <p><strong>SSH (Secure Shell)</strong> ஒரு encrypted protocol — idha use panni, neenga ஒரு remote machine la terminal open pannலாம். Neenga type pannற ovvoru letterum, server anuppற ovvoru responsum, encrypted channel via than poagum — idhukkula network la யாரும் padikka mudiyathu. Real-world example: idhu courier la sealed envelope anuppறது mathiri — postman, delivery boy, edhuvum andha envelope ah open panni padikka mudiyathu, receiver mattum than open pannalam.</p>
 
-      <h3>Method A — Password login (simplest, weaker)</h3>
+      <h3>Method A — Password login (simple, weaker)</h3>
       <div class="term">
         <div class="term-head"><span>connect with a password</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
         <pre><span class="pr">$</span> ssh yourname@your_server_ip
@@ -435,7 +475,7 @@
       </div>
 
       <h3>Method B — SSH key pair (recommended)</h3>
-      <p>An SSH key pair has two parts: a <strong>private key</strong> that never leaves your laptop, and a <strong>public key</strong> that you place on the server. The server can verify your private key matches without the key ever being transmitted — this is far stronger than a password and immune to brute-force guessing.</p>
+      <p>ஒரு SSH key pair la rendu parts irukum: <strong>private key</strong> — idhu eப்போதும் unga laptop la than irukum, veliya poagathu; and <strong>public key</strong> — idha neenga server la place pannuvinga. Server, unga private key match aaguthu nu verify pannidum, andha key transmit pannaமலே — idhu password kitta vida romba strong, brute-force guess panna mudiyaadhu. Real-world example: idhu fingerprint lock mathiri — unga fingerprint (private key) eppovum unga finger la than irukum; door la irukற scanner (public key) andha pattern ah recognize pannudhu, but unga actual finger ah copy panni eduthukka mudiyathu.</p>
 
       <div class="term">
         <div class="term-head"><span>generate a key pair (on your local machine)</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
@@ -460,11 +500,11 @@ Enter file in which to save the key (/home/you/.ssh/id_ed25519):</span> <span cl
 
       <div class="callout danger">
         <span class="ctitle">Critical permission rule</span>
-        <p>Your private key file must not be readable by other users, or SSH will refuse to use it. Run <code>chmod 600 ~/.ssh/id_ed25519</code> on your local machine to lock this down. Never share or upload your private key — only the <code>.pub</code> file ever leaves your computer.</p>
+        <p>Unga private key file ah, vera yarum padikka mudiyaadha irukanum — illana SSH andha key ah use panna refuse pannidum. Local machine la <code>chmod 600 ~/.ssh/id_ed25519</code> run panni idha lock pannunga. Private key ah eப்போதும் share pannaதீங்க, upload pannaadheenga — <code>.pub</code> file mattum than unga computer kitta irundhu veliya poagum.</p>
       </div>
 
-      <h3>Once keys work, disable password login</h3>
-      <p>This single step blocks the most common attack vector against fresh servers: automated bots brute-forcing SSH passwords 24/7.</p>
+      <h3>Keys work aana pinnadi, password login disable pannunga</h3>
+      <p>Idhu ஒரே step, fresh servers மேல் most common attack ah block pannidum — bots 24/7 automatic ah SSH passwords guess panni try pannudha irukum. Real-world example: idhu, house ku ஒரே ஒரு entrance mattum vechi, andha entrance ku fingerprint lock potru, regular key-lock ah completely remove pannறது mathiri — burglars key duplicate pannuradhu try panni waste pannanga, fingerprint copy panna mudiyaadhu:</p>
       <div class="term">
         <div class="term-head"><span>/etc/ssh/sshd_config</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
         <pre><span class="pr">$</span> sudo nano /etc/ssh/sshd_config
@@ -477,19 +517,19 @@ PermitRootLogin no
       </div>
 
       <div class="callout warn">
-        <span class="ctitle">Don't lock yourself out</span>
-        <p>Test your key-based login in a <em>second</em> terminal window before closing your current session and before disabling passwords. If the key login fails and you've already disabled passwords, you can be locked out entirely.</p>
+        <span class="ctitle">Unnaiye lock pannaதீங்க</span>
+        <p>Current session ah close panna munnadi, password disable pannamunnadi — ஒரு <em>second</em> terminal window la key-based login test pannunga. Key login fail aana, password um already disable aaginaal, neenga completely locked out aagi poagலாம் — real-world la, house key maathi, vandha new key work aagavillai nu theriya, old lock ah already remove pannirundhaa — andha situation mathiri.</p>
       </div>
     </section>
 
     <!-- 05 HARDENING / FIREWALL -->
     <section class="section" id="hardening">
       <div class="sec-head"><span class="sec-num">05</span><h2>Hardening &amp; Firewall</h2></div>
-      <p class="sec-kicker">Close every door except the ones you're actively using.</p>
+      <p class="sec-kicker">Active ah use pannற doors mattum open ah vechu, மற்ற ella doors layum moodunga.</p>
 
-      <p>A fresh VPS is reachable on every port unless you tell it otherwise. <strong>UFW (Uncomplicated Firewall)</strong> is Ubuntu's friendly front-end to the kernel's firewall (iptables/nftables) — it lets you allow or block traffic by port with one-line commands.</p>
+      <p>Fresh VPS na, neenga edhuvum solla போக்கினா, every port layum reachable ah irukum. <strong>UFW (Uncomplicated Firewall)</strong> na, Ubuntu oda friendly front-end — kernel oda real firewall (iptables/nftables) ku — idha vechi, port basis ah traffic ah allow/block panna ஒரு line command mattum podhum. Real-world example: idhu ஒரு apartment complex la security gate mathiri — main gate (port 22 — SSH) mattum residents ku open, side gates ella close ah irukum, security guard ovvoru entry ah check pannudhu.</p>
 
-      <h3>Set up UFW</h3>
+      <h3>UFW set up pannunga</h3>
       <div class="term">
         <div class="term-head"><span>configure the firewall</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
         <pre><span class="pr">$</span> sudo ufw default deny incoming    <span class="c1"># block everything by default</span>
@@ -502,16 +542,18 @@ PermitRootLogin no
 <span class="pr">$</span> sudo ufw status verbose</pre>
       </div>
 
+<div class="table-wrap">
       <table>
-        <tr><th>Port</th><th>Service</th><th>Should it be open?</th></tr>
-        <tr><td><span class="chip">22</span></td><td>SSH</td><td>Yes — your access lifeline</td></tr>
-        <tr><td><span class="chip">80</span></td><td>HTTP</td><td>Yes, if serving a website</td></tr>
-        <tr><td><span class="chip">443</span></td><td>HTTPS</td><td>Yes, if using SSL</td></tr>
-        <tr><td><span class="chip">6379</span></td><td>Redis</td><td>No — keep internal only (see next module)</td></tr>
+        <tr><th>Port</th><th>Service</th><th>Open ah vekkanuma?</th></tr>
+        <tr><td><span class="chip">22</span></td><td>SSH</td><td>Aam — unga access lifeline idhu</td></tr>
+        <tr><td><span class="chip">80</span></td><td>HTTP</td><td>Aam, website serve pannina</td></tr>
+        <tr><td><span class="chip">443</span></td><td>HTTPS</td><td>Aam, SSL use pannina</td></tr>
+        <tr><td><span class="chip">6379</span></td><td>Redis</td><td>Illa — internal mattum (next module la paaklam)</td></tr>
       </table>
+      </div>
 
-      <h3>Stop brute-force attempts: Fail2Ban</h3>
-      <p><strong>Fail2Ban</strong> watches log files for repeated failed login attempts and temporarily bans the offending IP address at the firewall level — an automatic bouncer for your server.</p>
+      <h3>Brute-force attempts ah nirutta: Fail2Ban</h3>
+      <p><strong>Fail2Ban</strong> log files ah watch pannudhu, repeated failed login attempts paakudhu, andha IP address ah firewall level la temporary ah ban pannidudhu — unga server ku ஒரு automatic bouncer mathiri. Real-world example: club entrance la security bouncer, ஒரே ஆள் wrong password 5 times sonna, andha aala entrance kitta வரவும் கூட விடாமல் block pannudhu — repeated suspicious attempts ah detect panni action edukudhu.</p>
       <div class="term">
         <div class="term-head"><span>install fail2ban</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
         <pre><span class="pr">$</span> sudo apt install fail2ban -y
@@ -531,11 +573,11 @@ PermitRootLogin no
     <!-- 06 REDIS -->
     <section class="section" id="redis">
       <div class="sec-head"><span class="sec-num">06</span><h2>Installing Redis</h2></div>
-      <p class="sec-kicker">A fast, in-memory data store you'll use for caching, sessions, and queues.</p>
+      <p class="sec-kicker">Caching, sessions, queues ku use pannற fast, in-memory data store.</p>
 
-      <p><strong>Redis</strong> (REmote DIctionary Server) is an in-memory key-value data store. Because data lives in RAM rather than on disk, reads and writes happen in microseconds — it's commonly used for caching database results, storing user sessions, rate-limiting, and message queues between services.</p>
+      <p><strong>Redis</strong> (REmote DIctionary Server) ஒரு in-memory key-value data store. Data, disk la illama RAM la than irukum — adhukku reads/writes microseconds la nadanthidudhu. Real-world example: disk (Postgres mathiri database) na unga library oda bookshelf — book எடுக்கணுமா, walk panni poyi, search panni, edukka வேணும். RAM (Redis) na unga desk mela already open ah vechirukற book — straight ah hand ah eduthuringa, walk pannanenum வேணாம். Idhuvala Redis ah, database results cache panna, user sessions store panna, rate-limiting ku, services kudikula message queues ku use pannrom.</p>
 
-      <h3>Install Redis on Ubuntu</h3>
+      <h3>Ubuntu la Redis install pannunga</h3>
       <div class="term">
         <div class="term-head"><span>install &amp; start</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
         <pre><span class="pr">$</span> sudo apt update
@@ -544,7 +586,7 @@ PermitRootLogin no
 <span class="pr">$</span> sudo systemctl status redis-server   <span class="c1"># confirm it's running</span></pre>
       </div>
 
-      <h3>Test it works</h3>
+      <h3>Work aagudha nu test pannunga</h3>
       <div class="term">
         <div class="term-head"><span>redis-cli</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
         <pre><span class="pr">$</span> redis-cli ping
@@ -556,8 +598,8 @@ PermitRootLogin no
 <span class="out">"world"</span></pre>
       </div>
 
-      <h3>Secure Redis — this step is non-negotiable</h3>
-      <p>By default, Redis has <strong>no password</strong> and may bind to all network interfaces. An unprotected Redis instance exposed to the internet is one of the most commonly exploited misconfigurations — attackers actively scan for it.</p>
+      <h3>Redis secure pannunga — idhu skip panna mudiyaadhu</h3>
+      <p>Default ah, Redis ku <strong>password edhuvum illa</strong>, and ella network interfaces ku bind aagalam. Unprotected Redis instance, internet ku expose aaginaal — idhu most commonly exploited misconfiguration; attackers active ah idha scan pannudhu. Real-world example: idhu unga locker room la, locker ku password lock vekkamal, door ah open ah vechirukudhu mathiri — security guard (firewall) irundhaalum, locker room kulla pona yarum, edhuvum எடுத்துக்கலாம்.</p>
 
       <div class="term">
         <div class="term-head"><span>/etc/redis/redis.conf</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
@@ -581,34 +623,36 @@ requirepass a_long_random_password_here
       </div>
 
       <div class="callout danger">
-        <span class="ctitle">Never expose port 6379 publicly</span>
-        <p>In the firewall module, port 6379 was deliberately left closed. Your application server talks to Redis over <code>localhost</code> or a private network — Redis should never be reachable from the public internet directly.</p>
+        <span class="ctitle">Port 6379 ah public ah expose pannaதீங்க</span>
+        <p>Firewall module la, port 6379 ah intentionally close ah vechom. Unga application server, Redis kooda <code>localhost</code> via or private network via than pesanum — Redis eப்போதும் public internet la irundhu directly reachable ah irukka koodadhu.</p>
       </div>
     </section>
 
     <!-- 07 SSL -->
     <section class="section" id="ssl">
       <div class="sec-head"><span class="sec-num">07</span><h2>SSL / TLS &amp; Domains</h2></div>
-      <p class="sec-kicker">Encrypt traffic between your visitors and your server — for free.</p>
+      <p class="sec-kicker">Visitors ku unga server ku idhukula traffic ah free ah encrypt pannunga.</p>
 
-      <p><strong>SSL/TLS</strong> encrypts the connection between a browser and your server, turning <code>http://</code> into <code>https://</code>. It proves to visitors that they're really talking to your server (not an impostor), and that nobody in between can read or tamper with the traffic. <strong>Let's Encrypt</strong> is a free, automated certificate authority that makes this a five-minute task.</p>
+      <p><strong>SSL/TLS</strong>, browser ku unga server ku idhukula connection ah encrypt pannudhu, <code>http://</code> ah <code>https://</code> ah maathividudhu. Idhu visitors ku prove pannidudhu — real ah unga server kooda than pesuringa (fake/impostor illa), and idhukula யாரும் traffic ah padikka mudiyaadhu, tamper panna mudiyaadhu. <strong>Let's Encrypt</strong> ஒரு free, automated certificate authority — idha vechi, 5 minutes la idha pannalam. Real-world example: idhu, courier envelope mela tamper-proof seal vekkurathu mathiri — andha seal break aagirundha, recipient ku theriyum envelope la edhuvum mess pannirundha nu; SSL padikinaa, padlock icon andha seal mathiri.</p>
 
-      <h3>Step 1 — Point a domain at your server</h3>
-      <p>Before requesting a certificate, your domain needs an <strong>A record</strong> pointing to your VPS's public IP address. This is set in your domain registrar's DNS panel:</p>
+      <h3>Step 1 — Unga domain ah server ku point pannunga</h3>
+      <p>Certificate request panna munnadi, unga domain ku ஒரு <strong>A record</strong> venum — unga VPS oda public IP address ku point pannanum. Idha unga domain registrar oda DNS panel la set pannறீங்க:</p>
+<div class="table-wrap">
       <table>
         <tr><th>Type</th><th>Host</th><th>Value</th></tr>
         <tr><td>A</td><td>@</td><td>your_server_ip</td></tr>
         <tr><td>A</td><td>www</td><td>your_server_ip</td></tr>
       </table>
+      </div>
 
-      <h3>Step 2 — Install a web server (Nginx)</h3>
+      <h3>Step 2 — Web server install pannunga (Nginx)</h3>
       <div class="term">
         <div class="term-head"><span>install nginx</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
         <pre><span class="pr">$</span> sudo apt install nginx -y
 <span class="pr">$</span> sudo systemctl enable --now nginx</pre>
       </div>
 
-      <h3>Step 3 — Get a free SSL certificate with Certbot</h3>
+      <h3>Step 3 — Certbot vechi free SSL certificate vaangunga</h3>
       <div class="term">
         <div class="term-head"><span>certbot</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
         <pre><span class="pr">$</span> sudo apt install certbot python3-certbot-nginx -y
@@ -619,7 +663,7 @@ Deploying certificate...
 Congratulations! You have successfully enabled HTTPS</span></pre>
       </div>
 
-      <p>Certbot automatically edits your Nginx config to redirect HTTP to HTTPS and renews itself — Let's Encrypt certificates expire every 90 days, and Certbot installs a scheduled renewal job for you:</p>
+      <p>Certbot automatic ah unga Nginx config ah edit panni, HTTP ah HTTPS ku redirect pannidudhu, and அதே tham renew aagudhu — Let's Encrypt certificates 90 days ki expire aagum, Certbot ஒரு scheduled renewal job already install pannidudhu:</p>
       <div class="term">
         <div class="term-head"><span>verify auto-renewal</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
         <pre><span class="pr">$</span> sudo certbot renew --dry-run
@@ -627,17 +671,17 @@ Congratulations! You have successfully enabled HTTPS</span></pre>
       </div>
 
       <div class="callout">
-        <span class="ctitle">What "padlock secure" actually means</span>
-        <p>The browser padlock confirms the connection is encrypted and the certificate matches the domain — it says nothing about whether the site's content or backend is trustworthy. SSL protects data in transit; it isn't a guarantee of overall security.</p>
+        <span class="ctitle">"Padlock secure" na real ah enna artham — real-world example</span>
+        <p>Browser padlock confirm pannudhu — connection encrypted, certificate domain ku match aagudhu — idhu mattum than. Site content trustworthy ah irukka nu edhuvum guarantee pannathu. Real-world example: sealed envelope (SSL), edhuvum tamper pannama vandhachu nu confirm pannidudhu — but andha letter kulla irukra content correct ah, truthful ah irukka nu seal sollaathu. SSL data ah transit la protect pannudhu; idhu overall security guarantee illa.</p>
       </div>
     </section>
 
     <!-- 08 STACK -->
     <section class="section" id="stack">
       <div class="sec-head"><span class="sec-num">08</span><h2>Putting It Together</h2></div>
-      <p class="sec-kicker">How every piece you just learned fits into one request.</p>
+      <p class="sec-kicker">Ippo padichathu ellam, ஒரு single request la eppadi fit aagudhu.</p>
 
-      <p>Here's what happens, top to bottom, when a visitor loads your HTTPS site on a server you've hardened with everything above:</p>
+      <p>Mela ella security layum vechi harden pannina server la, ஒரு visitor unga HTTPS site ah load pannumbodhu, top to bottom enna nadakudhu nu paaklam — real-world example: idhu ஒரு secured office building ku visitor varudhu mathiri — main gate security check pannudhu, reception verify pannudhu, apuram file cabinet kitta poa vendiya file ah eduthu kudukudhu:</p>
 
       <div class="diagram" style="flex-wrap:wrap;">
         <div class="box"><div class="lbl">Browser</div><div class="desc">Requests https://yourdomain.com</div></div>
@@ -649,11 +693,11 @@ Congratulations! You have successfully enabled HTTPS</span></pre>
         <div class="box you"><div class="lbl">Redis (localhost)</div><div class="desc">Returns cached data instantly</div></div>
       </div>
 
-      <p>Meanwhile, <strong>Fail2Ban</strong> is quietly watching the SSH log in the background, and the only way <em>you</em> get in to manage any of it is through an SSH key — never a password.</p>
+      <p>Idhu nadakkumbothu, <strong>Fail2Ban</strong> background la quietly SSH log ah watch pannudhu, and <em>neenga</em> mattum idha manage panna ஒரு வழி than irukudhu — SSH key via, password via eப்போதும் illa.</p>
 
       <div class="callout">
-        <span class="ctitle">This is the same shape as production</span>
-        <p>Real production stacks add load balancers, managed databases, and monitoring — but the core shape (firewall → reverse proxy with TLS → app → cache) is exactly what you just set up by hand.</p>
+        <span class="ctitle">Idhu than production oda same shape</span>
+        <p>Real production stacks la, load balancers, managed databases, monitoring add aagum — but core shape (firewall → reverse proxy with TLS → app → cache) idhu than, neenga ippove hand ah set up pannina structure.</p>
       </div>
     </section>
 
@@ -679,11 +723,13 @@ Congratulations! You have successfully enabled HTTPS</span></pre>
 
       <h3>Step 2 — A record point pannunga unga VPS IP ku</h3>
       <p>Registrar dashboard la, இந்த records add pannunga (your_server_ip ah unga VPS oda real public IP vechu replace pannunga):</p>
+<div class="table-wrap">
       <table>
         <tr><th>Type</th><th>Host</th><th>Value</th><th>TTL</th></tr>
         <tr><td>A</td><td>@</td><td>your_server_ip</td><td>Auto / 3600</td></tr>
         <tr><td>A</td><td>www</td><td>your_server_ip</td><td>Auto / 3600</td></tr>
       </table>
+      </div>
       <p><code>@</code> nu vechathu root domain ku (<code>xyz.com</code>), <code>www</code> nu vechathu (<code>www.xyz.com</code>) ku. Rendu um same IP ku point pannina, both versions work aagum.</p>
 
       <div class="callout warn">
@@ -753,6 +799,7 @@ https://xyz.com and https://www.xyz.com</span></pre>
       </div>
 
       <h3>VM vs Docker container — difference enna?</h3>
+<div class="table-wrap">
       <table>
         <tr><th>VPS (Virtual Machine)</th><th>Docker Container</th></tr>
         <tr><td>Full operating system kooda boot aagum</td><td>Host OS oda kernel ah share pannikkum — light weight</td></tr>
@@ -760,6 +807,7 @@ https://xyz.com and https://www.xyz.com</span></pre>
         <tr><td>GBs of disk space edukum</td><td>MBs matter — much smaller</td></tr>
         <tr><td>Unga whole VPS thaan ஒரு VM</td><td>Same VPS la pala containers run aagalam</td></tr>
       </table>
+      </div>
 
       <h3>Step 1 — Docker install pannunga (Ubuntu VPS la)</h3>
       <div class="term">
@@ -950,6 +998,7 @@ volumes:
 <span class="pr">$</span> sudo certbot --nginx -d xyz.com -d www.xyz.com</pre>
       </div>
 
+<div class="table-wrap">
       <table>
         <tr><th>Layer</th><th>Public?</th><th>Reached via</th></tr>
         <tr><td>Nginx</td><td>Yes — 443 only</td><td>https://xyz.com</td></tr>
@@ -957,6 +1006,7 @@ volumes:
         <tr><td>Backend container</td><td>No — internal port 5000</td><td>Nginx <code>/api/</code> route only</td></tr>
         <tr><td>Database + Redis</td><td>No — Docker internal network</td><td>Backend container only, via service name</td></tr>
       </table>
+      </div>
 
       <div class="callout danger">
         <span class="ctitle">Idhu thaan correct security pattern</span>
@@ -1079,6 +1129,7 @@ volumes:
         <span class="badge">✓ Redis</span>
         <span class="badge">✓ SSL/TLS</span>
       </div>
+      <a href="production-deployment-masterclass.html" style=" color: #000; background-color: #aac4b6; text-decoration: none; padding: 10px 20px; border-radius: 5px; " target="_blank" rel="noopener noreferrer">View Your Deployed App</a>
     </div>
 
   </main>
@@ -1157,6 +1208,29 @@ volumes:
         quiz.querySelector('.explain').classList.add('show');
       });
     });
+  });
+
+  // ---- mobile sidebar drawer ----
+  const sidebar = document.getElementById('sidebar');
+  const menuBtn = document.getElementById('menuBtn');
+  const overlay = document.getElementById('sidebarOverlay');
+
+  function openSidebar(){
+    sidebar.classList.add('open');
+    overlay.classList.add('show');
+    menuBtn.setAttribute('aria-expanded','true');
+  }
+  function closeSidebar(){
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+    menuBtn.setAttribute('aria-expanded','false');
+  }
+  menuBtn.addEventListener('click', ()=>{
+    sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+  });
+  overlay.addEventListener('click', closeSidebar);
+  document.querySelectorAll('.navlist a').forEach(a=>{
+    a.addEventListener('click', closeSidebar);
   });
 
   // ---- scroll spy + progress bar ----
